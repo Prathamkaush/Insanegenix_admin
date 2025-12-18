@@ -1,0 +1,147 @@
+user-frontend/
+│
+├── app/
+│   ├── layout.tsx
+│   │   # Root layout
+│   │   # Navbar + Footer
+│   │
+│   ├── globals.css
+│
+│   ├── page.tsx
+│   │   # Home page
+│   │   # Hero, categories, trending, new arrivals
+│
+│   ├── category/
+│   │   └── [slug]/page.tsx            ✅ SEO-friendly
+│   │       # Category-wise product listing
+│   │       # /women-kurtis
+│
+│   ├── products/
+│   │   ├── page.tsx
+│   │   │   # All products
+│   │   │   # Filters, sorting, pagination
+│   │   │
+│   │   └── [slug]/page.tsx
+│   │       # Product detail
+│   │       # Sizes, discount, stock status, wishlist
+│
+│   ├── search/
+│   │   └── page.tsx
+│   │       # Search results
+│
+│   ├── wishlist/                      ✅ NEW
+│   │   └── page.tsx
+│   │       # Wishlist products
+│
+│   ├── cart/
+│   │   └── page.tsx
+│   │       # Cart
+│   │       # Size-based stock validation
+│
+│   ├── checkout/
+│   │   ├── address/page.tsx
+│   │   ├── payment/page.tsx
+│   │   ├── review/page.tsx
+│   │   └── success/page.tsx
+│
+│   ├── orders/
+│   │   ├── page.tsx
+│   │   └── [id]/page.tsx
+│
+│   ├── profile/
+│   │   └── page.tsx
+│   │       # Profile + orders + reviews
+│
+│   ├── feedback/
+│   │   └── page.tsx
+│
+│   ├── reviews/
+│   │   └── page.tsx
+│
+│   ├── auth/
+│   │   └── login/page.tsx
+│   │       # OTP login
+│
+│   ├── static/                        ✅ RENAMED (avoid /pages confusion)
+│   │   ├── about/page.tsx
+│   │   ├── contact/page.tsx
+│   │   ├── faq/page.tsx
+│   │   ├── terms/page.tsx
+│   │   ├── privacy/page.tsx
+│   │   ├── shipping/page.tsx
+│   │   └── refund/page.tsx
+│
+│   └── not-found.tsx
+│
+├── components/
+│   ├── navbar/
+│   │   ├── NavbarClient.tsx
+│   │   ├── MegaMenu.tsx
+│   │   └── NavItem.tsx
+│
+│   ├── product/
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductImages.tsx
+│   │   ├── SizeSelector.tsx           ✅ MULTI-SIZE SUPPORT
+│   │   ├── PriceBox.tsx               ✅ discount + final price
+│   │   ├── StockBadge.tsx
+│   │   ├── WishlistButton.tsx         ✅ NEW
+│   │   └── ReviewStars.tsx
+│
+│   ├── cart/
+│   │   ├── CartItem.tsx
+│   │   ├── AddToCartButton.tsx
+│   │   ├── SizeStockWarning.tsx
+│   │   └── CartSummary.tsx
+│
+│   ├── checkout/
+│   │   ├── AddressForm.tsx
+│   │   ├── PaymentSelector.tsx
+│   │   ├── OrderSummary.tsx
+│   │   └── RazorpayButton.tsx
+│
+│   ├── orders/
+│   │   ├── OrderCard.tsx
+│   │   ├── OrderStatusTimeline.tsx
+│   │   └── CancelOrderButton.tsx
+│
+│   ├── wishlist/                      ✅ NEW
+│   │   ├── WishlistCard.tsx
+│   │   └── RemoveWishlistButton.tsx
+│
+│   ├── feedback/
+│   │   └── FeedbackForm.tsx
+│
+│   ├── reviews/
+│   │   ├── ReviewForm.tsx
+│   │   └── ReviewList.tsx
+│
+│   ├── home/
+│   │   ├── HeroCarousel.tsx
+│   │   ├── TrendingSection.tsx
+│   │   └── NewArrivals.tsx
+│
+│   ├── common/
+│   │   ├── Footer.tsx
+│   │   ├── Loader.tsx
+│   │   ├── EmptyState.tsx
+│   │   ├── Modal.tsx
+│   │   └── Pagination.tsx
+│
+│   └── auth/
+│       └── AuthModal.tsx
+│
+├── lib/
+│   ├── api.ts                    # Axios instance
+│   ├── helpers.ts                # Currency, date, discount calc
+│   ├── constants.ts
+│   └── razorpay.ts
+│
+├── context/
+│   ├── AuthContext.tsx
+│   ├── CartContext.tsx
+│   ├── CheckoutContext.tsx
+│   └── WishlistContext.tsx       ✅ NEW
+│
+└── middleware.ts                 ✅ OPTIONAL
+    # Protect /orders, /checkout, /wishlist

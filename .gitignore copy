@@ -1,0 +1,14 @@
+# Node
+node_modules/
+.env
+.env.*
+dist/
+.next/
+uploads/
+
+# Prisma
+prisma/migrations/
+
+# OS
+.DS_Store
+Thumbs.db
