@@ -1,105 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
-import { useRouter } from "next/navigation";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import ProductPreviewModal from "@/components/ProductPreviewModal";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
-
+import BulkUploadModal from "@/components/BulkUploadModal";
+import { Filter, PackagePlus, Search, UploadCloud } from "lucide-react";
 
 export default function ProductsPage() {
   const router = useRouter();
-
-  // MAIN DATA
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
-  const [subtypes, setSubtypes] = useState<any[]>([]);
-
-  // MODALS
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<any>(null);
-
-  // FILTERS
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedType, setSelectedType] = useState("");
-  const [selectedSubtype, setSelectedSubtype] = useState("");
   const [sort, setSort] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
   const [stockFilter, setStockFilter] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-
-  // PAGINATION
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const limit = 10;
 
-  // ================================
-  // LOAD FILTER OPTIONS
-  // ================================
   useEffect(() => {
-    api.get("/categories").then((res) => setCategories(res.data));
+    api.get("/categories").then((res) => setCategories(res.data || [])).catch(console.error);
   }, []);
 
   useEffect(() => {
-    if (!selectedCategory) return setTypes([]);
-    api.get(`/product-types?categoryId=${selectedCategory}`).then((res) => setTypes(res.data));
+    if (!selectedCategory) {
+      setTypes([]);
+      return;
+    }
+    api.get(`/product-types?categoryId=${selectedCategory}`).then((res) => setTypes(res.data || [])).catch(console.error);
   }, [selectedCategory]);
 
-  useEffect(() => {
-    if (!selectedType) return setSubtypes([]);
-    api.get(`/product-subtypes?typeId=${selectedType}`).then((res) => setSubtypes(res.data));
-  }, [selectedType]);
-
-  // ================================
-  // FETCH PRODUCTS (PAGINATION + FILTERS)
-  // ================================
-  const fetchProducts = () => {
-    api
-      .get("/products", {
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/products", {
         params: {
           page,
           limit,
           categoryId: selectedCategory || undefined,
           typeId: selectedType || undefined,
-          subtypeId: selectedSubtype || undefined,
-          minPrice: minPrice || undefined,
-          maxPrice: maxPrice || undefined,
           sort: sort || undefined,
           stock: stockFilter || undefined,
         },
-      })
-      .then((res) => {
-        setProducts(res.data.products || []); // ⭐ prevents undefined
-        setPages(res.data.pages || 1);
-      })
-      .catch(() => {
-        setProducts([]); // avoid crash
       });
-  };
+      setProducts(res.data.products || []);
+      setPages(res.data.pages || 1);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, selectedCategory, selectedType, sort, stockFilter]);
 
-  // LOAD ON PAGE CHANGE
   useEffect(() => {
     fetchProducts();
-  }, [page]);
-
-  // LOAD INIT
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // ================================
-  // DELETE
-  // ================================
-  const openDeleteModal = (id: number) => {
-    setDeleteId(id);
-    setModalOpen(true);
-  };
+  }, [fetchProducts]);
 
   const confirmDelete = async () => {
     await api.delete(`/products/${deleteId}`);
@@ -107,241 +74,160 @@ export default function ProductsPage() {
     fetchProducts();
   };
 
-  // ================================
-  // PREVIEW
-  // ================================
-  const openPreview = (product: any) => {
-    setPreviewProduct(product);
-    setPreviewOpen(true);
-  };
-
-  // ================================
-  // UI RENDER
-  // ================================
   return (
-    <>
-      <AdminLayout>
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-brandPink">Products</h1>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 rounded-md bg-brandBlack p-5 text-white">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tight">
+              Supplement <span className="text-brandRed">Inventory</span>
+            </h1>
+            <p className="text-zinc-400 text-sm">Manage PDP content, flavors, weights, pricing, and stock.</p>
+          </div>
 
-          <button
-            onClick={() => router.push("/products/create")}
-            className="bg-brandPink text-white px-4 py-2 rounded-lg hover:bg-brandPinkLight"
-          >
-            + Add Product
-          </button>
-        </div>
-
-        {/* FILTER TOGGLE */}
-        <div className="mb-4">
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-2 bg-brandPink text-white px-4 py-2 rounded-lg hover:bg-brandPinkLight"
-          >
-            <FilterAltIcon />
-            Filters
-          </button>
-        </div>
-
-        {/* FILTER PANEL */}
-        <div
-          className={`transition-all duration-300 overflow-hidden ${
-            filterOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="bg-white shadow p-4 rounded-xl space-y-4">
-            <h2 className="text-lg font-semibold text-brandPink">Filter Products</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              
-              {/* CATEGORY */}
-              <select
-                className="border p-2 rounded bg-brandCream/40"
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setSelectedType("");
-                  setSelectedSubtype("");
-                }}
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-
-              {/* TYPE */}
-              <select
-                className="border p-2 rounded bg-brandCream/40"
-                value={selectedType}
-                onChange={(e) => {
-                  setSelectedType(e.target.value);
-                  setSelectedSubtype("");
-                }}
-                disabled={!selectedCategory}
-              >
-                <option value="">All Types</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-
-              {/* SUBTYPE */}
-              <select
-                className="border p-2 rounded bg-brandCream/40"
-                value={selectedSubtype}
-                onChange={(e) => setSelectedSubtype(e.target.value)}
-                disabled={!selectedType}
-              >
-                <option value="">All Subtypes</option>
-                {subtypes.map((st) => (
-                  <option key={st.id} value={st.id}>{st.name}</option>
-                ))}
-              </select>
-
-              {/* SORT */}
-              <select
-                className="border p-2 rounded bg-brandCream/40"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="">Sort By</option>
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="low_to_high">Price: Low to High</option>
-                <option value="high_to_low">Price: High to Low</option>
-              </select>
-            </div>
-
-            {/* PRICE */}
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <input
-                type="number"
-                placeholder="Min Price"
-                className="border p-2 rounded bg-brandCream/40"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Max Price"
-                className="border p-2 rounded bg-brandCream/40"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-            </div>
-
-            {/* STOCK */}
-            <select
-              className="border p-2 rounded bg-brandCream/40 w-full"
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-            >
-              <option value="">All Stock</option>
-              <option value="in">In Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-
-            {/* APPLY BUTTON */}
+          <div className="flex flex-wrap gap-3">
             <button
-              className="mt-3 px-4 py-2 bg-brandPink text-white rounded hover:bg-brandPinkLight"
-              onClick={() => { setPage(1); fetchProducts(); }}
+              onClick={() => setFilterOpen(!filterOpen)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-[11px] font-black uppercase tracking-widest transition-all border ${
+                filterOpen ? "bg-brandRed text-white border-brandRed" : "bg-white/10 text-white border-white/10 hover:bg-white/20"
+              }`}
             >
-              Apply Filters
+              <Filter size={16} /> Filters
+            </button>
+            <button
+              onClick={() => setBulkUploadOpen(true)}
+              className="flex items-center gap-2 bg-white/10 text-white px-5 py-2.5 rounded-md text-[11px] font-black uppercase tracking-widest hover:bg-white/20 transition-all"
+            >
+              <UploadCloud size={16} /> Bulk Upload
+            </button>
+            <button
+              onClick={() => router.push("/products/create")}
+              className="flex items-center gap-2 bg-brandRed text-white px-5 py-2.5 rounded-md text-[11px] font-black uppercase tracking-widest hover:bg-white hover:text-brandBlack transition-all"
+            >
+              <PackagePlus size={16} /> Add Supplement
             </button>
           </div>
         </div>
 
-        {/* PRODUCTS LIST */}
-        <div className="space-y-5 mt-6">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white shadow rounded-xl p-4 flex gap-4 items-start border border-brandCream"
-              onClick={() => openPreview(p)}
-            >
-              <img
-                src={`http://localhost:3030/uploads/products/${p.img1}`}
-                className="w-24 h-24 object-cover rounded"
-              />
+        {filterOpen && (
+          <div className="admin-surface p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Select label="Category" value={selectedCategory} onChange={(v: string) => { setSelectedCategory(v); setSelectedType(""); }} options={categories.map((c) => ({ value: String(c.id), label: c.name }))} />
+            <Select label="Type" value={selectedType} onChange={setSelectedType} options={types.map((t) => ({ value: String(t.id), label: t.name }))} />
+            <Select label="Sort By" value={sort} onChange={setSort} options={[{ value: "newest", label: "Newest First" }, { value: "low_to_high", label: "Price: Low to High" }, { value: "high_to_low", label: "Price: High to Low" }]} />
+            <Select label="Stock Status" value={stockFilter} onChange={setStockFilter} options={[{ value: "in", label: "In Stock" }, { value: "out", label: "Out of Stock" }]} />
+          </div>
+        )}
 
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-brandBlack">Title : {p.title}</h2>
-                <p className="text-brandGray text-sm">
-                  {p.category?.name} → {p.type?.name} → {p.subtype?.name}
-                </p>
-                <div className="flex items-center gap-6 mt-1">
-                  <p className="font-semibold text-brandPink">₹{p.price}</p>
-                  <p className={`font-semibold ${
-  p.stock === 0
-    ? "text-red-500"
-    : p.stock < 5
-    ? "text-orange-500"
-    : "text-green-600"
-}`}>Stock: {p.stock}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  className="px-4 py-1 bg-brandPinkLight text-white rounded hover:bg-brandPink"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/products/edit/${p.id}`);
-                  }}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="px-4 py-1 bg-brandRed text-white rounded hover:bg-red-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDeleteModal(p.id);
-                  }}
-                >
-                  Delete
-                </button>
+        <div className="relative min-h-[400px]">
+          {loading && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex items-center justify-center rounded-md">
+              <div className="flex flex-col items-center">
+                <div className="animate-spin w-10 h-10 border-[3px] border-brandRed border-t-transparent rounded-full mb-4" />
+                <p className="text-brandRed font-bold animate-pulse">Updating catalog...</p>
               </div>
             </div>
-          ))}
+          )}
+
+          <div className="grid gap-4">
+            {products.map((p) => (
+              <div
+                key={p.id}
+                className="group admin-surface p-4 flex gap-5 items-center transition-all hover:shadow-md hover:border-brandRed/30 cursor-pointer"
+                onClick={() => {
+                  setPreviewProduct(p);
+                  setPreviewOpen(true);
+                }}
+              >
+                <div className="relative w-24 h-24 shrink-0 overflow-hidden rounded-md bg-white/5 border border-white/10">
+                  {p.img1 ? (
+                    <img src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${p.img1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={p.title} />
+                  ) : (
+                    <img src="/insanegenix/product/Whey.png" className="w-full h-full object-contain p-3" alt="" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 bg-brandRed/10 text-brandRed text-[10px] font-black rounded uppercase">
+                      {p.category?.name || "Supplement"}
+                    </span>
+                    {p.goal && <span className="px-2 py-0.5 bg-white/5 text-zinc-400 text-[10px] font-black rounded uppercase">{p.goal}</span>}
+                    <span className="text-zinc-500 text-xs">/ {p.type?.name}</span>
+                  </div>
+                  <h2 className="truncate text-lg font-bold text-white leading-tight mb-2 group-hover:text-brandRed transition-colors">
+                    {p.title}
+                  </h2>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-xl font-black text-white">₹{Number(p.finalPrice || p.price || 0).toLocaleString()}</p>
+                    {p.discountType && p.discountValue && <p className="text-sm text-zinc-500 line-through">₹{Number(p.price).toLocaleString()}</p>}
+                    <p className="text-xs font-bold px-2 py-1 rounded-md bg-white/5 text-zinc-300">{p.variants?.length || 0} variants</p>
+                    <p className={`text-xs font-bold px-2 py-1 rounded-md ${
+                      p.stock === 0 ? "bg-red-950/20 text-red-400" : p.stock < 5 ? "bg-orange-950/20 text-orange-400" : "bg-green-950/20 text-green-400"
+                    }`}>
+                      {p.stock === 0 ? "Out of Stock" : `Stock: ${p.stock}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    className="p-2.5 bg-brandRed/10 text-brandRed rounded-md hover:bg-brandRed hover:text-white transition-all shadow-sm"
+                    onClick={(e) => { e.stopPropagation(); router.push(`/products/edit/${p.id}`); }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="p-2.5 bg-white/10 text-zinc-300 rounded-md hover:bg-brandRed hover:text-white transition-all shadow-sm"
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(p.id); setModalOpen(true); }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {!loading && products.length === 0 && (
+              <div className="admin-surface p-20 text-center border-2 border-dashed border-white/10">
+                <Search className="mx-auto text-zinc-700 mb-4" size={58} />
+                <p className="text-zinc-400 font-medium">No supplements match your filters.</p>
+              </div>
+            )}
+          </div>
         </div>
-      </AdminLayout>
 
-      {/* PAGINATION */}
-      <div className="flex justify-center mt-8 gap-3 items-center">
-        <button
-          className="px-4 py-2 bg-brandPink text-white rounded disabled:bg-gray-300"
-          disabled={page === 1}
-          onClick={() => setPage(page - 1)}
-        >
-          Prev
-        </button>
-
-        <span className="font-semibold text-brandBlack">Page {page} of {pages}</span>
-
-        <button
-          className="px-4 py-2 bg-brandPink text-white rounded disabled:bg-gray-300"
-          disabled={page === pages}
-          onClick={() => setPage(page + 1)}
-        >
-          Next
-        </button>
+        <div className="flex justify-center mt-12 mb-8 gap-4 items-center">
+          <button className="w-10 h-10 flex items-center justify-center border-2 border-white/10 rounded-md hover:border-brandRed hover:text-brandRed transition-all disabled:opacity-30" disabled={page === 1} onClick={() => setPage(page - 1)}>
+            ←
+          </button>
+          <div className="admin-surface px-6 py-2 border-white/10 shadow-sm font-bold text-white">
+            Page {page} <span className="text-zinc-500 font-normal mx-1">of</span> {pages}
+          </div>
+          <button className="w-10 h-10 flex items-center justify-center border-2 border-white/10 rounded-md hover:border-brandRed hover:text-brandRed transition-all disabled:opacity-30" disabled={page === pages} onClick={() => setPage(page + 1)}>
+            →
+          </button>
+        </div>
       </div>
 
-      {/* MODALS */}
-      <DeleteConfirmModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onConfirm={confirmDelete}
-        itemName="product"
-      />
+      <DeleteConfirmModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onConfirm={confirmDelete} itemName="product" />
+      <ProductPreviewModal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} product={previewProduct} />
+      <BulkUploadModal isOpen={bulkUploadOpen} onClose={() => setBulkUploadOpen(false)} onSuccess={() => { setPage(1); fetchProducts(); }} />
+    </AdminLayout>
+  );
+}
 
-      <ProductPreviewModal
-        isOpen={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        product={previewProduct}
-      />
-    </>
+function Select({ label, value, onChange, options }: any) {
+  return (
+    <div className="space-y-1">
+      <label className="admin-label ml-1">{label}</label>
+      <select className="admin-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">All</option>
+        {options.map((option: any) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

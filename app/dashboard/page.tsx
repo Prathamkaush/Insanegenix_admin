@@ -1,11 +1,15 @@
 "use client";
 
-import AdminLayout from "@/components/AdminLayout";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import AdminLayout from "@/components/AdminLayout";
+import AdminLoader from "@/components/AdminLoader";
 import { api } from "@/lib/api";
 import RevenueLineChart from "@/components/charts/RevenueLineChart";
 import OrdersBarChart from "@/components/charts/OrdersBarChart";
 import OrderStatusPie from "@/components/charts/OrderStatusPie";
+import UserStatsCards from "@/components/common/UserStatsCards";
+import UsersLineChart from "@/components/charts/UsersChart";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
@@ -13,7 +17,6 @@ export default function DashboardPage() {
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= FETCH DASHBOARD DATA ================= */
   useEffect(() => {
     async function loadDashboard() {
       try {
@@ -36,13 +39,10 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  /* ================= LOADING STATE ================= */
   if (loading) {
     return (
       <AdminLayout>
-        <p className="text-center py-24 text-gray-500">
-          Loading dashboard…
-        </p>
+        <AdminLoader />
       </AdminLayout>
     );
   }
@@ -50,118 +50,121 @@ export default function DashboardPage() {
   if (!stats || !charts) {
     return (
       <AdminLayout>
-        <p className="text-center py-24 text-red-500">
-          Failed to load dashboard
-        </p>
+        <div className="admin-surface p-10 text-center">
+          <p className="font-black uppercase tracking-widest text-brandRed">Failed to load dashboard data.</p>
+        </div>
       </AdminLayout>
     );
   }
 
+  const cards = [
+    { label: "Supplements", value: stats.products },
+    { label: "Orders", value: stats.totalOrders },
+    { label: "Today Orders", value: stats.todayOrders },
+    { label: "Revenue", value: `₹${stats.revenue}` },
+    { label: "Today Revenue", value: `₹${stats.todayRevenue}` },
+  ];
+
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto w-full space-y-10">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <div className="relative overflow-hidden rounded-sm bg-brandBlack p-6 text-white">
+          <img
+            src="/insanegenix/product/ISO.png"
+            alt=""
+            className="absolute right-8 top-1/2 hidden h-44 -translate-y-1/2 object-contain opacity-20 lg:block"
+          />
+          <div className="relative max-w-3xl">
+            <p className="admin-page-kicker">InsaneGenix Control Room</p>
+            <h1 className="mt-2 text-3xl font-black uppercase tracking-tight md:text-4xl">Admin Dashboard</h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              Track revenue, orders, customers, product stock, and supplement catalog health.
+            </p>
+          </div>
+        </div>
 
-        {/* ================= HEADER ================= */}
-        <h1 className="text-3xl font-bold text-brandPink">
-          Admin Dashboard
-        </h1>
-
-        {/* ================= STATS ================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {[
-            { label: "Products", value: stats.products },
-            { label: "Orders", value: stats.totalOrders },
-            { label: "Today Orders", value: stats.todayOrders },
-            { label: "Revenue", value: `₹${stats.revenue}` },
-            { label: "Today Revenue", value: `₹${stats.todayRevenue}` },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl shadow-sm p-5 border"
-            >
-              <p className="text-sm text-gray-500">{item.label}</p>
-              <p className="text-2xl font-bold text-brandPink">
-                {item.value}
-              </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+          <UserStatsCards users={stats.users} />
+          {cards.map((item) => (
+            <div key={item.label} className="admin-surface flex min-h-[110px] flex-col justify-center p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{item.label}</p>
+              <p className="mt-2 text-2xl font-black text-white">{item.value}</p>
             </div>
           ))}
         </div>
 
-        {/* ================= LOW STOCK ALERT ================= */}
         {lowStockItems.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <h3 className="font-semibold text-red-700 mb-2">
-              Low Stock Alert
-            </h3>
-
-            <ul className="text-sm space-y-1">
+          <div className="rounded-sm border-l-4 border-brandRed bg-brandRed/10 p-4 shadow-sm">
+            <h3 className="font-black uppercase tracking-tight text-red-400">Low Stock Alert</h3>
+            <ul className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-2 lg:grid-cols-3">
               {lowStockItems.map((p) => (
-                <li key={p.id}>
-                  {p.title} — <b>{p.stock}</b> left
+                <li key={p.id} className="rounded-sm border border-brandRed/20 bg-white/5 p-2 text-red-300">
+                  {p.title} <span className="font-black">{p.stock}</span> units left
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* ================= CHARTS ================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="font-semibold mb-4">
-              Revenue (Last 7 Days)
-            </h3>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ChartPanel title="Users" tone="bg-brandRed">
+            <UsersLineChart data={charts.usersTrend} />
+          </ChartPanel>
+          <ChartPanel title="Revenue" tone="bg-emerald-500">
             <RevenueLineChart data={charts.revenueTrend} />
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="font-semibold mb-4">
-              Orders (Last 7 Days)
-            </h3>
+          </ChartPanel>
+          <ChartPanel title="Orders" tone="bg-zinc-950">
             <OrdersBarChart data={charts.ordersTrend} />
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="font-semibold mb-4">
-              Order Status
-            </h3>
-            <OrderStatusPie data={charts.orderStatus} />
-          </div>
+          </ChartPanel>
+          <ChartPanel title="Order Status" tone="bg-amber-500">
+            <div className="flex h-full justify-center">
+              <OrderStatusPie data={charts.orderStatus} />
+            </div>
+          </ChartPanel>
         </div>
 
-        {/* ================= RECENT PRODUCTS ================= */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Recent Products
-          </h2>
+        <div className="admin-surface overflow-hidden">
+          <div className="border-b border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-black uppercase tracking-tight text-white">Recent Supplements</h2>
+          </div>
 
-          <div className="space-y-4">
+          <div className="divide-y divide-white/10">
             {stats.recentProducts.map((p: any) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-4 border-b pb-4 last:border-none"
-              >
+              <div key={p.id} className="flex items-center gap-4 p-4 transition-colors hover:bg-white/5">
                 <img
-                  src={`http://localhost:3030/uploads/products/${p.img1}`}
-                  className="w-16 h-16 rounded object-cover"
+                  src={p.img1 ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${p.img1}` : "/insanegenix/product/Whey.png"}
+                  alt={p.title}
+                  className="h-14 w-14 rounded-sm border border-white/10 object-cover shadow-sm"
                 />
 
-                <div className="flex-1">
-                  <p className="font-semibold">{p.title}</p>
-                  <p className="text-sm text-gray-500">₹{p.price}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-white">{p.title}</p>
+                  <p className="mt-1 text-sm font-black text-brandRed">₹{p.price}</p>
                 </div>
 
-                <a
+                <Link
                   href={`/products/edit/${p.id}`}
-                  className="text-brandPink font-semibold text-sm"
+                  className="rounded-sm border border-brandRed/20 px-4 py-2 text-xs font-black uppercase tracking-widest text-brandRed transition-all hover:bg-brandRed hover:text-white"
                 >
                   Edit
-                </a>
+                </Link>
               </div>
             ))}
           </div>
         </div>
-
       </div>
     </AdminLayout>
+  );
+}
+
+function ChartPanel({ title, tone, children }: { title: string; tone: string; children: React.ReactNode }) {
+  return (
+    <div className="admin-surface p-6">
+      <h3 className="mb-6 flex items-center text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">
+        <span className={`mr-2 h-2 w-2 rounded-full ${tone}`} />
+        {title} (Last 7 Days)
+      </h3>
+      <div className="h-[300px] w-full">{children}</div>
+    </div>
   );
 }

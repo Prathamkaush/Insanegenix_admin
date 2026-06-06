@@ -5,23 +5,21 @@ import { api } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
 import { useParams } from "next/navigation";
 import TrackingTimeline from "@/components/TrackingTimeline";
+import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
+import { FiPackage, FiTruck, FiMapPin, FiCreditCard, FiClock } from "react-icons/fi";
 
-
+/* ================= ENHANCED STATUS BADGE ================= */
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: any = {
-    PENDING: "bg-yellow-100 text-yellow-700",
-    CONFIRMED: "bg-blue-100 text-blue-700",
-    SHIPPED: "bg-purple-100 text-purple-700",
-    DELIVERED: "bg-green-100 text-green-700",
-    CANCELLED: "bg-red-100 text-red-700",
+    PENDING: "bg-amber-950/20 text-amber-400 border-amber-800/30",
+    CONFIRMED: "bg-blue-950/20 text-blue-400 border-blue-800/30",
+    SHIPPED: "bg-purple-950/20 text-purple-400 border-purple-800/30",
+    DELIVERED: "bg-emerald-950/20 text-emerald-400 border-emerald-800/30",
+    CANCELLED: "bg-rose-950/20 text-rose-400 border-rose-800/30",
   };
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-        colors[status] || "bg-gray-100 text-gray-600"
-      }`}
-    >
+    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${colors[status]}`}>
       {status}
     </span>
   );
@@ -29,199 +27,210 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
-  const [order, setOrder] = useState<any>(null);
-  const [status, setStatus] = useState("");
-  const [showConfirm, setShowConfirm] = useState(false);
-const [updating, setUpdating] = useState(false);
+  const orderId = String(id);
 
+  const [order, setOrder] = useState<any>(null);
+  const [tracking, setTracking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchOrder = async () => {
-    const res = await api.get(`/orders/${id}`);
+    const res = await api.get(`/admin/orders/${orderId}`);
     setOrder(res.data);
-    setStatus(res.data.status);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchOrder();
   }, []);
 
-  const updateStatus = async () => {
-  try {
-    setUpdating(true);
-    await api.put(`/orders/${id}/status`, { status });
-    fetchOrder();
-    setShowConfirm(false);
-  } catch {
-    alert("Failed to update order");
-  } finally {
-    setUpdating(false);
-  }
-};
+  useEffect(() => {
+    if (!order?.trackingId) return;
+    api
+      .get(`/admin/shipping/track/${orderId}`)
+      .then((res) => setTracking(res.data))
+      .catch(() => setTracking(null));
+  }, [order?.trackingId]);
 
-  if (!order) {
+  const confirmOrder = async () => {
+    try {
+      setActionLoading(true);
+      setError("");
+      await api.put(`/orders/${orderId}/status`, { status: "CONFIRMED" });
+      await fetchOrder();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to confirm order");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const shipOrder = async () => {
+    try {
+      setActionLoading(true);
+      setError("");
+      await api.post(`/admin/shipping/delhivery/${orderId}`);
+      await fetchOrder();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Delhivery shipment failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
       <AdminLayout>
-        <p className="py-20 text-center">Loading order...</p>
+        <div className="py-20 flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-brandRed border-t-transparent rounded-full animate-spin" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Order Data...</p>
+        </div>
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="admin-page max-w-6xl">
 
-        {/* HEADER */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-brandPink">
-            Order id : {order.id}
-          </h1>
+        {/* HEADER SECTION */}
+        <div className="admin-hero">
+          <div>
+            <h1 className="admin-hero-title">
+              Order <span className="text-brandRed">#{order.id}</span>
+            </h1>
+            <p className="admin-hero-subtitle flex items-center gap-2">
+              <FiClock /> {new Date(order.createdAt).toLocaleString()}
+            </p>
+          </div>
           <StatusBadge status={order.status} />
         </div>
 
-        {/* SUMMARY + ADDRESS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* ORDER SUMMARY */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="text-gray-500">Total Amount:</span>{" "}
-                <span className="font-semibold text-brandPink">
-                  ₹{order.totalAmount}
-                </span>
-              </p>
-              <p>
-                <span className="text-gray-500">Placed On:</span>{" "}
-                {new Date(order.createdAt).toLocaleString()}
-              </p>
+        {/* SUMMARY & ADDRESS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Order Summary */}
+          <div className="admin-surface p-6 md:p-8">
+            <h2 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 mb-8 flex items-center gap-2">
+              <FiCreditCard className="text-brandRed" /> Payment & Financials
+            </h2>
+            <div className="space-y-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400 font-bold uppercase text-[10px]">Method</span>
+                <span className="font-black uppercase tracking-tight text-white">{order.paymentMethod === "COD" ? "Cash on Delivery" : "Online Payment"}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400 font-bold uppercase text-[10px]">Items Subtotal</span>
+                <span className="font-bold text-white">₹{order.totalAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400 font-bold uppercase text-[10px]">Shipping</span>
+                <span className="font-bold text-white">₹{order.shippingCharge.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-xl pt-4 border-t border-white/5">
+                <span className="font-black uppercase tracking-tighter text-white">Net Payable</span>
+                <span className="font-black text-brandRed">₹{order.finalAmount.toLocaleString()}</span>
+              </div>
             </div>
           </div>
 
-          {/* CUSTOMER ADDRESS */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Customer Address</h2>
-
-            <div className="text-sm text-gray-700 space-y-1">
-              <p>{order.address?.name}</p>
-              <p>{order.address?.phone}</p>
-              <p>{order.address?.street}</p>
-              <p>
-                {order.address?.city}, {order.address?.state}
-              </p>
-              <p>{order.address?.pincode}</p>
+          {/* Customer Address */}
+          <div className="admin-surface p-6 md:p-8">
+            <h2 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 mb-8 flex items-center gap-2">
+              <FiMapPin className="text-brandRed" /> Customer Logistics
+            </h2>
+            <div className="space-y-2">
+              <p className="text-lg font-black uppercase tracking-tight text-white">{order.address?.name}</p>
+              <p className="text-sm font-bold text-brandRed tracking-widest">{order.address?.phone}</p>
+              <div className="pt-2 text-sm text-zinc-400 font-medium leading-relaxed uppercase tracking-tight">
+                <p>{order.address?.addressLine1 || order.address?.street}</p>
+                <p>{order.address?.city}, {order.address?.state} - {order.address?.pincode}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* TRACKING */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Order Tracking</h2>
-          <TrackingTimeline status={order.status} />
+        {/* TIMELINE */}
+        <div className="admin-table">
+          <OrderStatusTimeline
+            status={order.status}
+            createdAt={order.createdAt}
+            shippedAt={order.shippedAt}
+            confirmedAt={order.confirmedAt}
+            deliveredAt={order.deliveredAt}
+          />
         </div>
 
-        {/* ITEMS */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Items</h2>
+        {/* ACTIONS SECTION */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="admin-surface p-6 md:p-8 space-y-6">
+                <h2 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                    <FiTruck className="text-brandRed" /> Fulfillment Actions
+                </h2>
+                
+                <div className="flex gap-4">
+                    {order.status === "PENDING" && (
+                        <button
+                            disabled={actionLoading}
+                            onClick={confirmOrder}
+                            className="flex-1 rounded-md bg-white/10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandRed"
+                        >
+                            Confirm Order
+                        </button>
+                    )}
 
-          <div className="divide-y">
-            {order.items.map((item: any) => (
-              <div
-                key={item.id}
-                className="py-4 flex justify-between items-center"
-              >
-                <div>
-                  <p className="font-semibold">{item.product.title}</p>
-                  <p className="text-sm text-gray-500">
-                    Qty: {item.quantity} × ₹{item.price}
-                  </p>
+                    {order.status === "CONFIRMED" && !order.trackingId && (
+                        <button
+                            disabled={actionLoading}
+                            onClick={shipOrder}
+                            className="flex-1 rounded-md bg-brandRed py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack"
+                        >
+                            Ship with Delhivery
+                        </button>
+                    )}
                 </div>
 
-                <p className="font-semibold text-brandPink">
-                  ₹{item.quantity * item.price}
-                </p>
-              </div>
-            ))}
-          </div>
+                {order.trackingId && (
+                    <div className="p-4 bg-emerald-950/20 border border-emerald-800/30 rounded-md">
+                        <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                            Shipment Active: <span className="ml-2 font-mono text-xs">{order.trackingId}</span>
+                        </p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="p-4 bg-rose-950/20 border border-rose-800/30 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-md">
+                        {error}
+                    </div>
+                )}
+            </div>
+
+            {/* ITEM LIST */}
+            <div className="admin-surface p-6 md:p-8">
+                <h2 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 mb-8 flex items-center gap-2">
+                    <FiPackage className="text-brandRed" /> Manifest Items
+                </h2>
+                <div className="divide-y divide-white/5">
+                    {order.items.map((item: any) => (
+                        <div key={item.id} className="flex justify-between py-4 first:pt-0 last:pb-0">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-tight text-white">{item.product.title}</p>
+                                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Quantity: {item.quantity} × ₹{item.price}</p>
+                            </div>
+                            <span className="text-sm font-black text-white">₹{(item.quantity * item.price).toLocaleString()}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
 
-        {/* UPDATE STATUS */}
-        <div className="bg-white rounded-xl shadow p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold mb-1">
-              Update Order Status
-            </h2>
-            <p className="text-sm text-gray-500">
-              Change order state as it progresses
-            </p>
+        {/* SHIPMENT TRACKING (External API Data) */}
+        {tracking && (
+          <div className="admin-surface p-6 md:p-8">
+            <h2 className="text-[11px] font-black uppercase tracking-widest text-white mb-8">Detailed Transit Logs</h2>
+            <TrackingTimeline scans={tracking.scans} />
           </div>
-
-          <div className="flex items-center gap-4">
-            <select
-              className="border px-4 py-2 rounded-lg bg-gray-50"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="SHIPPED">Shipped</option>
-              <option value="DELIVERED">Delivered</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="px-6 py-2 bg-brandPink text-white rounded-lg hover:bg-brandPinkLight"
-            >
-              Update
-            </button>
-          </div>
-        {showConfirm && (
-  <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-
-      <h3 className="text-lg font-bold mb-2">
-        Confirm Status Change
-      </h3>
-
-      <p className="text-gray-600 mb-6">
-        Change order status to{" "}
-        <span className="font-semibold text-brandPink">
-          {status}
-        </span>
-        ?
-      </p>
-
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={() => setShowConfirm(false)}
-          className="px-4 py-2 rounded border"
-        >
-          Cancel
-        </button>
-
-<button
-          onClick={updateStatus}   // ✅ FIXED
-          disabled={updating}
-          className={`px-5 py-2 rounded-lg text-white font-semibold transition
-            ${
-              updating
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-brandPink hover:bg-brandPinkLight"
-            }`}
-        >
-          {updating ? "Updating..." : "Confirm Update"}
-        </button>
-
-      </div>
-
-    </div>
-  </div>
-)}
-
-        </div>
-
+        )}
 
       </div>
     </AdminLayout>

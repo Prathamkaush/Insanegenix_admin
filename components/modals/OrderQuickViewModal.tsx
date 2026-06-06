@@ -14,45 +14,45 @@ export default function OrderQuickViewModal({
   if (!order) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-lg p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-zinc-950/90 border border-white/10 w-full max-w-md rounded-xl shadow-2xl p-6 relative text-white">
         {/* CLOSE */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-black"
+          className="absolute top-3 right-3 text-zinc-400 hover:text-white transition-colors"
         >
           ✕
         </button>
 
-        <h2 className="text-xl font-bold text-brandPink mb-4">
+        <h2 className="text-xl font-black uppercase tracking-tight text-brandRed mb-4">
           Order ID: {order.id}
         </h2>
 
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm text-zinc-300">
           <p>
-            <span className="font-semibold">Status:</span>{" "}
-            <span className="uppercase">{order.status}</span>
+            <span className="font-bold text-zinc-400">Status:</span>{" "}
+            <span className="uppercase font-semibold">{order.status}</span>
           </p>
 
           <p>
-            <span className="font-semibold">Total Amount:</span> ₹
-            {order.totalAmount}
+            <span className="font-bold text-zinc-400">Total Amount:</span>{" "}
+            <span className="font-semibold text-white">₹{order.totalAmount}</span>
           </p>
 
           <p>
-            <span className="font-semibold">Placed On:</span>{" "}
-            {new Date(order.createdAt).toLocaleString()}
+            <span className="font-bold text-zinc-400">Placed On:</span>{" "}
+            <span className="font-semibold">{new Date(order.createdAt).toLocaleString()}</span>
           </p>
 
           {order.user && (
             <>
               <p>
-                <span className="font-semibold">Customer:</span>{" "}
-                {order.user.name || "N/A"}
+                <span className="font-bold text-zinc-400">Customer:</span>{" "}
+                <span className="font-semibold">{order.user.name || "N/A"}</span>
               </p>
               <p>
-                <span className="font-semibold">Phone:</span>{" "}
-                {order.user.phone || "N/A"}
+                <span className="font-bold text-zinc-400">Phone:</span>{" "}
+                <span className="font-semibold">{order.user.phone || "N/A"}</span>
               </p>
             </>
           )}
@@ -61,7 +61,7 @@ export default function OrderQuickViewModal({
         <div className="mt-6 text-right">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-brandPink text-white rounded-lg hover:bg-brandPinkLight"
+            className="px-5 py-2.5 bg-brandRed text-white text-[11px] font-black uppercase tracking-widest rounded-md hover:bg-white hover:text-brandBlack transition-all"
           >
             Close
           </button>

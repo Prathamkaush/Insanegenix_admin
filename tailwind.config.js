@@ -8,12 +8,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brandPink: "#E91E63",
-        brandPinkLight: "#F48FB1",
-        brandRed: "#D32F2F",
-        brandCream: "#FFF8E7",
-        brandBlack: "#212121",
-        brandGray: "#757575",
+        brandRed: "#e50914",
+        brandRedLight: "#ff2a35",
+        brandCream: "#f4f4f5",
+        brandBlack: "#080808",
+        brandGray: "#6b7280",
+        brandPurple: "#27272a",
+        igRed: "#e50914",
+        igRedDark: "#9f0712",
+        igCarbon: "#111111",
+        igAsh: "#f4f4f5",
+        igGold: "#f5b642",
       },
     },
   },

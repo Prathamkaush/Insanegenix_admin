@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const COLORS = ["#e91e63", "#ffb6c1", "#ffd1dc"];
+const COLORS = ["#e50914", "#9f0712", "#f4f4f5", "#6b7280"];
 
 export default function OrderStatusPie({ data }: { data: any[] }) {
   return (
@@ -18,14 +18,14 @@ export default function OrderStatusPie({ data }: { data: any[] }) {
           data={data}
           dataKey="value"
           nameKey="status"
-          outerRadius={90}
-          label
+          outerRadius={85}
+          label={{ fill: '#fff', fontSize: 10 }}
         >
           {data.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+            <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="#080808" strokeWidth={2} />
           ))}
         </Pie>
-        <Tooltip />
+        <Tooltip contentStyle={{ backgroundColor: '#080808', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} />
       </PieChart>
     </ResponsiveContainer>
   );

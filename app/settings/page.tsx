@@ -1,34 +1,25 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
-
-
+import { FiSettings } from "react-icons/fi";
 
 export default function SettingsPage() {
   const [tab, setTab] = useState("profile");
-
-  // PROFILE STATES
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-
-  // PASSWORD
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-
-  // STORE SETTINGS
   const [storeName, setStoreName] = useState("");
   const [supportEmail, setSupportEmail] = useState("");
   const [supportPhone, setSupportPhone] = useState("");
   const [address, setAddress] = useState("");
   const [logo, setLogo] = useState<File | null>(null);
-
-  // GENERAL SETTINGS
   const [currency, setCurrency] = useState("INR");
   const [maintenance, setMaintenance] = useState(false);
 
-  // Prevent undefined → controlled switch
-  const safe = (v: any) => v ?? "";   // 👈 converts null/undefined → ""
+  const safe = (v: any) => v ?? "";
 
   useEffect(() => {
     loadSettings();
@@ -79,169 +70,88 @@ export default function SettingsPage() {
     alert("General settings updated");
   };
 
+  const tabLabel = (t: string) =>
+    t === "profile" ? "Profile Settings" : t === "store" ? "Store Settings" : "General Settings";
+
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-brandPink mb-6">Settings</h1>
+      <div className="admin-page">
+        <div className="admin-hero">
+          <div>
+          <h1 className="admin-hero-title">
+            Admin <span className="text-brandRed">Settings</span>
+          </h1>
+          <p className="admin-hero-subtitle">
+            Configure profile, store identity, and general storefront behavior.
+          </p>
+          </div>
+          <div className="admin-dark-button pointer-events-none">
+            <FiSettings size={16} /> Settings
+          </div>
+        </div>
 
-      {/* TABS */}
-      <div className="flex gap-4 mb-6 border-b pb-2">
-        {["profile", "store", "general"].map((t) => (
-          <button
-            key={t}
-            className={`px-4 py-2 rounded ${
-              tab === t ? "bg-brandPink text-white" : "bg-brandCream/50"
-            }`}
-            onClick={() => setTab(t)}
-          >
-            {t === "profile"
-              ? "Profile Settings"
-              : t === "store"
-              ? "Store Settings"
-              : "General Settings"}
-          </button>
-        ))}
+        <div className="flex gap-3 flex-wrap">
+          {["profile", "store", "general"].map((t) => (
+            <button
+              key={t}
+              className={`px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition ${
+                tab === t ? "bg-brandRed text-white" : "bg-white border border-zinc-200 text-brandBlack hover:bg-red-50 hover:text-brandRed"
+              }`}
+              onClick={() => setTab(t)}
+            >
+              {tabLabel(t)}
+            </button>
+          ))}
+        </div>
+
+        {tab === "profile" && (
+          <section className="bg-white border border-zinc-200 p-6 md:p-8 rounded-md shadow-sm space-y-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-brandBlack">Admin Profile</h2>
+
+            <input className="admin-field" placeholder="Admin Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="admin-field" type="email" placeholder="Admin Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+
+            <button className="inline-flex items-center justify-center rounded-md bg-brandRed px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-brandBlack" onClick={saveProfile}>Save Profile</button>
+
+            <div className="border-t border-zinc-100 pt-6 space-y-4">
+              <h2 className="text-sm font-black uppercase tracking-widest text-brandBlack">Change Password</h2>
+              <input className="admin-field" type="password" placeholder="Old Password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
+              <input className="admin-field" type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <button className="inline-flex items-center justify-center rounded-md bg-brandBlack px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-brandRed" onClick={changePassword}>Update Password</button>
+            </div>
+          </section>
+        )}
+
+        {tab === "store" && (
+          <section className="bg-white border border-zinc-200 p-6 md:p-8 rounded-md shadow-sm space-y-4">
+            <h2 className="text-sm font-black uppercase tracking-widest text-brandBlack">Store Settings</h2>
+            <input className="admin-field" placeholder="Store Name" value={storeName} onChange={(e) => setStoreName(e.target.value)} />
+            <input className="admin-field" type="email" placeholder="Support Email" value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
+            <input className="admin-field" placeholder="Support Phone" value={supportPhone} onChange={(e) => setSupportPhone(e.target.value)} />
+            <textarea className="admin-field min-h-28" placeholder="Store Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <input type="file" onChange={(e) => setLogo(e.target.files?.[0] || null)} className="admin-field" />
+            <button className="inline-flex items-center justify-center rounded-md bg-brandRed px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-brandBlack" onClick={saveStoreSettings}>Save Store Settings</button>
+          </section>
+        )}
+
+        {tab === "general" && (
+          <section className="bg-white border border-zinc-200 p-6 md:p-8 rounded-md shadow-sm space-y-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-brandBlack">General Settings</h2>
+            <select className="admin-field max-w-xs" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+              <option value="INR">INR (Rs.)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (Euro)</option>
+            </select>
+
+            <label className="flex items-center gap-3 text-sm font-bold text-brandBlack">
+              <input type="checkbox" checked={maintenance} onChange={(e) => setMaintenance(e.target.checked)} />
+              Enable Maintenance Mode
+            </label>
+
+            <button className="inline-flex items-center justify-center rounded-md bg-brandRed px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white transition hover:bg-brandBlack" onClick={saveGeneralSettings}>Save General Settings</button>
+          </section>
+        )}
       </div>
-
-      {/* PROFILE TAB */}
-      {tab === "profile" && (
-        <div className="bg-white shadow p-6 rounded-xl space-y-4">
-          <h2 className="text-xl font-semibold">Admin Profile</h2>
-
-          <input
-            type="text"
-            className="border p-2 rounded w-full"
-            placeholder="Admin Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <input
-            type="email"
-            className="border p-2 rounded w-full"
-            placeholder="Admin Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <button
-            className="bg-brandPink text-white px-5 py-2 rounded"
-            onClick={saveProfile}
-          >
-            Save Profile
-          </button>
-
-          <hr />
-
-          <h2 className="text-xl font-semibold">Change Password</h2>
-
-          <input
-            type="password"
-            className="border p-2 rounded w-full"
-            placeholder="Old Password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-          />
-
-          <input
-            type="password"
-            className="border p-2 rounded w-full"
-            placeholder="New Password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-
-          <button
-            className="bg-brandPink text-white px-5 py-2 rounded"
-            onClick={changePassword}
-          >
-            Update Password
-          </button>
-        </div>
-      )}
-
-      {/* STORE SETTINGS TAB */}
-      {tab === "store" && (
-        <div className="bg-white shadow p-6 rounded-xl space-y-4">
-          <h2 className="text-xl font-semibold">Store Settings</h2>
-
-          <input
-            type="text"
-            className="border p-2 rounded w-full"
-            placeholder="Store Name"
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-          />
-
-          <input
-            type="email"
-            className="border p-2 rounded w-full"
-            placeholder="Support Email"
-            value={supportEmail}
-            onChange={(e) => setSupportEmail(e.target.value)}
-          />
-
-          <input
-            type="text"
-            className="border p-2 rounded w-full"
-            placeholder="Support Phone"
-            value={supportPhone}
-            onChange={(e) => setSupportPhone(e.target.value)}
-          />
-
-          <textarea
-            className="border p-2 rounded w-full"
-            placeholder="Store Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-
-          <input
-            type="file"
-            onChange={(e) => setLogo(e.target.files?.[0] || null)}
-            className="border p-2 rounded w-full"
-          />
-
-          <button
-            className="bg-brandPink text-white px-5 py-2 rounded"
-            onClick={saveStoreSettings}
-          >
-            Save Store Settings
-          </button>
-        </div>
-      )}
-
-      {/* GENERAL TAB */}
-      {tab === "general" && (
-        <div className="bg-white shadow p-6 rounded-xl space-y-4">
-          <h2 className="text-xl font-semibold">General Settings</h2>
-
-          <select
-            className="border p-2 rounded w-64"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-          >
-            <option value="INR">INR (₹)</option>
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-          </select>
-
-          <label className="flex items-center gap-3 mt-3">
-            <input
-              type="checkbox"
-              checked={maintenance}
-              onChange={(e) => setMaintenance(e.target.checked)}
-            />
-            Enable Maintenance Mode
-          </label>
-
-          <button
-            className="bg-brandPink text-white px-5 py-2 rounded"
-            onClick={saveGeneralSettings}
-          >
-            Save General Settings
-          </button>
-        </div>
-      )}
     </AdminLayout>
   );
 }

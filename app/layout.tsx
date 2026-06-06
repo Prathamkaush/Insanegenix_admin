@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Admin Panel",
-  description: "Admin Management Dashboard",
+  title: "InsaneGenix Admin",
+  description: "InsaneGenix commerce management dashboard",
 };
 
 export default function RootLayout({
@@ -12,9 +12,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      {/* Global background + text color */}
-      <body className="bg-brandCream text-brandBlack">
-        {children}
+      <body className="min-h-screen bg-brandBlack text-white antialiased overflow-x-hidden">
+        {/* App wrapper */}
+        
+          {children}
+        
       </body>
     </html>
   );

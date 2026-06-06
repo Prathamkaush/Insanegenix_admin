@@ -20,17 +20,17 @@ export default function DeleteConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* BACKDROP */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       ></div>
 
       {/* MODAL */}
-      <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-md animate-fadeIn">
-        <h2 className="text-xl font-bold text-red-600">Delete {itemName}</h2>
+      <div className="relative bg-zinc-950/90 border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-md animate-fadeIn text-white">
+        <h2 className="text-xl font-black uppercase tracking-tight text-brandRed">Delete {itemName}</h2>
 
-        <p className="mt-3 text-gray-700">
-          This action is <b>permanent</b>.  
-          To confirm, please type <b>"DELETE"</b> below:
+        <p className="mt-3 text-sm text-zinc-400">
+          This action is <b className="text-white">permanent</b>.  
+          To confirm, please type <b className="text-white">"DELETE"</b> below:
         </p>
 
         {/* Input */}
@@ -38,14 +38,14 @@ export default function DeleteConfirmModal({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder='Type "DELETE" to confirm'
-          className="mt-4 w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-400"
+          className="mt-4 w-full rounded-md border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-brandRed focus:ring-2 focus:ring-brandRed/20"
         />
 
         {/* BUTTONS */}
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+            className="px-5 py-2.5 rounded-md border border-white/10 bg-white/10 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-white/20"
           >
             Cancel
           </button>
@@ -56,10 +56,10 @@ export default function DeleteConfirmModal({
               onConfirm();
               setText("");
             }}
-            className={`px-5 py-2 rounded-lg text-white transition ${
+            className={`px-5 py-2.5 rounded-md text-[11px] font-black uppercase tracking-widest text-white transition-all ${
               text === "DELETE"
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-red-300 cursor-not-allowed"
+                ? "bg-brandRed hover:bg-white hover:text-brandBlack"
+                : "bg-brandRed/45 opacity-50 cursor-not-allowed"
             }`}
           >
             Delete
