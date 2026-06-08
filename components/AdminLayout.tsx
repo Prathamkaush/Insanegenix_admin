@@ -17,7 +17,7 @@ export default function AdminLayout({
       <div className="relative z-10 flex min-h-screen">
         <AdminSidebarClient />
 
-        <main className="flex-1 ml-0 md:ml-64 p-4 pt-20 md:p-8 md:pt-8 min-h-screen">
+        <main className="admin-content flex-1 ml-0 md:ml-64 p-4 pt-20 md:p-8 md:pt-8 min-h-screen">
           {children}
         </main>
       </div>

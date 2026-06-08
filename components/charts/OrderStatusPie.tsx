@@ -8,7 +8,31 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const COLORS = ["#e50914", "#9f0712", "#f4f4f5", "#6b7280"];
+const COLORS = ["#ef4444", "#f97316", "#22c55e", "#38bdf8", "#a78bfa", "#facc15"];
+
+function OrderStatusTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0];
+
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid rgba(255,255,255,0.2)",
+        borderRadius: 8,
+        boxShadow: "0 12px 28px rgba(0,0,0,0.35)",
+        color: "#111827",
+        fontSize: 13,
+        fontWeight: 800,
+        padding: "10px 12px",
+      }}
+    >
+      <span style={{ color: item.color }}>{item.name}</span>
+      <span style={{ color: "#111827" }}> : {item.value}</span>
+    </div>
+  );
+}
 
 export default function OrderStatusPie({ data }: { data: any[] }) {
   return (
@@ -19,13 +43,14 @@ export default function OrderStatusPie({ data }: { data: any[] }) {
           dataKey="value"
           nameKey="status"
           outerRadius={85}
-          label={{ fill: '#fff', fontSize: 10 }}
+          label={{ fill: "#ffffff", fontSize: 12, fontWeight: 800 }}
+          labelLine={{ stroke: "#ffffff", strokeWidth: 1.5 }}
         >
           {data.map((_, i) => (
             <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="#080808" strokeWidth={2} />
           ))}
         </Pie>
-        <Tooltip contentStyle={{ backgroundColor: '#080808', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} />
+        <Tooltip content={<OrderStatusTooltip />} cursor={false} />
       </PieChart>
     </ResponsiveContainer>
   );

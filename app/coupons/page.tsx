@@ -86,7 +86,7 @@ export default function AdminCouponsPage() {
                   coupons.map((c) => (
                     <tr key={c.id} className="admin-row group">
                       <td className="p-4">
-                        <span className="font-mono font-bold text-brandBlack bg-zinc-100 px-2 py-1 rounded-md text-xs uppercase tracking-tight">
+                        <span className="font-mono font-bold text-brandBlack  px-2 py-1 rounded-md text-xs uppercase tracking-tight">
                           {c.code}
                         </span>
                       </td>

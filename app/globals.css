@@ -78,6 +78,120 @@ body {
   @apply inline-flex items-center justify-center gap-2 rounded-md bg-brandRed px-5 py-2.5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack;
 }
 
+/* Admin contrast safety net.
+   Many older admin screens mix dark surfaces with light utility classes.
+   These rules keep dark panels readable while preserving dark text inside
+   intentionally light cards and form controls. */
+:is(.admin-page, .admin-content) :is(.text-brandBlack, .text-zinc-950, .text-zinc-900, .text-gray-950, .text-gray-900, .text-black) {
+  color: #ffffff !important;
+}
+
+:is(.admin-page, .admin-content) :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-zinc-300, .text-zinc-400, .text-zinc-500) {
+  color: #a1a1aa !important;
+}
+
+:is(.admin-page, .admin-content) input:not([type="file"]),
+:is(.admin-page, .admin-content) select,
+:is(.admin-page, .admin-content) textarea {
+  color: #111827;
+}
+
+:is(.admin-page, .admin-content) input::placeholder,
+:is(.admin-page, .admin-content) textarea::placeholder {
+  color: #6b7280;
+}
+
+:is(.admin-page, .admin-content) select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+:is(.admin-page, .admin-content) .admin-field,
+:is(.admin-page, .admin-content) .admin-field:not([type="file"]) {
+  color: #ffffff;
+}
+
+:is(.admin-page, .admin-content) .admin-field::placeholder {
+  color: #71717a;
+}
+
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50) {
+  color: #111827;
+}
+
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50)
+  :is(.text-brandBlack, .text-zinc-950, .text-zinc-900, .text-gray-950, .text-gray-900, .text-black) {
+  color: #111827 !important;
+}
+
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50)
+  :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-zinc-300, .text-zinc-400, .text-zinc-500) {
+  color: #6b7280 !important;
+}
+
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50)
+  input:not([type="file"]),
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50)
+  select,
+:is(.admin-page, .admin-content) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-zinc-100, .bg-zinc-200, .bg-emerald-50, .bg-rose-50, .bg-blue-50, .bg-amber-50)
+  textarea {
+  color: #111827;
+}
+
+.admin-homepage-editor .admin-surface {
+  color: #ffffff;
+}
+
+.admin-homepage-editor .admin-surface .text-brandBlack {
+  color: #ffffff !important;
+}
+
+.admin-homepage-editor .admin-surface .text-gray-400,
+.admin-homepage-editor .admin-surface .text-gray-500 {
+  color: #a1a1aa !important;
+}
+
+.admin-homepage-editor .admin-surface input,
+.admin-homepage-editor .admin-surface select,
+.admin-homepage-editor .admin-surface textarea {
+  color: #111827;
+}
+
+.admin-homepage-editor .admin-surface input::placeholder,
+.admin-homepage-editor .admin-surface textarea::placeholder {
+  color: #6b7280;
+}
+
+.admin-homepage-editor .admin-surface select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+.admin-homepage-editor .admin-surface .bg-white,
+.admin-homepage-editor .admin-surface .bg-gray-50,
+.admin-homepage-editor .admin-surface .bg-gray-100,
+.admin-homepage-editor .admin-surface .bg-emerald-50,
+.admin-homepage-editor .admin-surface .bg-rose-50 {
+  color: #111827;
+}
+
+.admin-homepage-editor .admin-surface .bg-white .text-brandBlack,
+.admin-homepage-editor .admin-surface .bg-gray-50 .text-brandBlack,
+.admin-homepage-editor .admin-surface .bg-gray-100 .text-brandBlack,
+.admin-homepage-editor .admin-surface .bg-emerald-50 .text-brandBlack,
+.admin-homepage-editor .admin-surface .bg-rose-50 .text-brandBlack {
+  color: #111827 !important;
+}
+
+.admin-homepage-editor .admin-surface .bg-white .text-gray-400,
+.admin-homepage-editor .admin-surface .bg-white .text-gray-500,
+.admin-homepage-editor .admin-surface .bg-gray-50 .text-gray-400,
+.admin-homepage-editor .admin-surface .bg-gray-50 .text-gray-500,
+.admin-homepage-editor .admin-surface .bg-gray-100 .text-gray-400,
+.admin-homepage-editor .admin-surface .bg-gray-100 .text-gray-500 {
+  color: #6b7280 !important;
+}
+
 .admin-table {
   @apply bg-zinc-950/80 border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md rounded-md overflow-hidden;
 }

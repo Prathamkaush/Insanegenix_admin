@@ -15,7 +15,7 @@ export default function UsersFilters({
         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-brandRed transition-colors" size={14} />
         <input
           className="admin-field pl-10 md:w-72 text-[11px] font-bold uppercase tracking-widest placeholder:text-zinc-600"
-          placeholder="Search name or email..."
+          placeholder="      Search name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
