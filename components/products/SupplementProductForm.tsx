@@ -88,6 +88,8 @@ const isHydrating = useRef(false);
   const [productLine, setProductLine] = useState("");
   const [goal, setGoal] = useState("");
   const [dietaryPreference, setDietaryPreference] = useState("");
+  const [dietaryType, setDietaryType] = useState("UNSPECIFIED");
+  const [tags, setTags] = useState("");
   const [proteinType, setProteinType] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [typeId, setTypeId] = useState("");
@@ -192,6 +194,12 @@ const isHydrating = useRef(false);
     setProductLine(initialProduct.productLine || "");
     setGoal(initialProduct.goal || "");
     setDietaryPreference(initialProduct.dietaryPreference || "");
+    setDietaryType(initialProduct.dietaryType || "UNSPECIFIED");
+    setTags(
+      Array.isArray(initialProduct.tags)
+        ? initialProduct.tags.join(", ")
+        : "",
+    );
     setProteinType(initialProduct.proteinType || "");
     setCategoryId(
       String(initialProduct.category?.id || initialProduct.categoryId || ""),
@@ -388,6 +396,20 @@ const isHydrating = useRef(false);
     fd.append("productLine", productLine);
     fd.append("goal", goal);
     fd.append("dietaryPreference", dietaryPreference);
+    fd.append("dietaryType", dietaryType);
+    fd.append(
+      "tags",
+      JSON.stringify(
+        Array.from(
+          new Set(
+            tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean),
+          ),
+        ),
+      ),
+    );
     fd.append("proteinType", proteinType);
     fd.append("categoryId", categoryId);
     if (typeId && typeId !== "") fd.append("typeId", typeId);
@@ -493,11 +515,30 @@ const isHydrating = useRef(false);
                 onChange={setGoal}
                 placeholder="Muscle gain, recovery"
               />
+              <SelectField
+                label="Dietary classification"
+                value={dietaryType}
+                onChange={setDietaryType}
+                placeholder="Select classification"
+                options={[
+                  { value: "UNSPECIFIED", label: "Not specified" },
+                  { value: "VEGETARIAN", label: "Vegetarian" },
+                  { value: "NON_VEGETARIAN", label: "Non-vegetarian" },
+                  { value: "VEGAN", label: "Vegan" },
+                ]}
+              />
               <Field
-                label="Dietary preference"
+                label="Dietary notes"
                 value={dietaryPreference}
                 onChange={setDietaryPreference}
-                placeholder="Vegetarian"
+                placeholder="Gluten-free, lactose-free"
+              />
+              <Field
+                label="Shop tags"
+                value={tags}
+                onChange={setTags}
+                placeholder="Energy, recovery, performance"
+                className="md:col-span-2"
               />
               <Field
                 label="Protein type"
@@ -943,6 +984,10 @@ const isHydrating = useRef(false);
               />
               <Summary label="GST" value={`${gstRate || 0}%`} />
               <Summary label="Goal" value={goal || "Not set"} />
+              <Summary
+                label="Diet"
+                value={dietaryType.replaceAll("_", " ")}
+              />
             </div>
           </div>
         </aside>

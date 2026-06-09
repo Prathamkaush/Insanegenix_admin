@@ -83,7 +83,7 @@ body {
    These rules keep dark panels readable while preserving dark text inside
    intentionally light cards and form controls. */
 :is(.admin-page, .admin-content) :is(.text-brandBlack, .text-zinc-950, .text-zinc-900, .text-gray-950, .text-gray-900, .text-black) {
-  color: #ffffff !important;
+  color: black !important;
 }
 
 :is(.admin-page, .admin-content) :is(.text-gray-300, .text-gray-400, .text-gray-500, .text-zinc-300, .text-zinc-400, .text-zinc-500) {
@@ -93,7 +93,7 @@ body {
 :is(.admin-page, .admin-content) input:not([type="file"]),
 :is(.admin-page, .admin-content) select,
 :is(.admin-page, .admin-content) textarea {
-  color: #111827;
+  color: white;
 }
 
 :is(.admin-page, .admin-content) input::placeholder,
