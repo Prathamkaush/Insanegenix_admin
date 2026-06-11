@@ -92,7 +92,7 @@ export default function AdminCouponsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-black text-brandBlack">
+                          <span className="text-sm font-black text-white">
                             {c.type === "PERCENT" ? `${c.value}%` : `Rs. ${c.value}`}
                           </span>
                           <span className="text-[9px] text-gray-400 font-bold uppercase">{c.type}</span>
@@ -156,11 +156,11 @@ export default function AdminCouponsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="admin-label">Value</p>
-                      <p className="text-sm font-black text-brandBlack">{c.type === "PERCENT" ? `${c.value}%` : `Rs. ${c.value}`}</p>
+                      <p className="text-sm font-black text-white">{c.type === "PERCENT" ? `${c.value}%` : `Rs. ${c.value}`}</p>
                     </div>
                     <div>
                       <p className="admin-label">Usage</p>
-                      <p className="text-sm font-black text-brandBlack">{c.usedCount} / {c.usageLimit ?? "Unlimited"}</p>
+                      <p className="text-sm font-black text-white">{c.usedCount} / {c.usageLimit ?? "Unlimited"}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2">

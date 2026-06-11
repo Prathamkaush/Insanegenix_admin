@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { AxiosError } from "axios";
 
+interface DiscountProduct {
+  id: number;
+  title: string;
+  price: number | string;
+  discountType?: string | null;
+  discountValue?: number | string | null;
+}
 
 interface DiscountModalProps {
-  product: any; // Ideally replace 'any' with your Product interface
+  product: DiscountProduct;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -13,14 +21,66 @@ interface DiscountModalProps {
 export default function DiscountModal({ product, onClose, onSaved }: DiscountModalProps) {
   const [type, setType] = useState(product.discountType || "");
   const [value, setValue] = useState(product.discountValue || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const numericValue = Number(value);
+  const productPrice = Number(product.price);
+  const invalidValue =
+    Boolean(type) &&
+    (!value ||
+      !Number.isFinite(numericValue) ||
+      numericValue <= 0 ||
+      (type === "PERCENT" && numericValue > 100) ||
+      (type === "FLAT" && numericValue >= productPrice));
+
+  const handleValueChange = (nextValue: string) => {
+    if (nextValue === "") {
+      setValue("");
+      setError("");
+      return;
+    }
+
+    const nextNumber = Number(nextValue);
+    if (!Number.isFinite(nextNumber) || nextNumber < 0) return;
+
+    if (type === "PERCENT" && nextNumber > 100) {
+      setError("Percentage discount cannot exceed 100%.");
+      return;
+    }
+
+    if (type === "FLAT" && nextNumber >= productPrice) {
+      setError(`Flat discount must be below Rs. ${productPrice}.`);
+      return;
+    }
+
+    setValue(nextValue);
+    setError("");
+  };
 
   const save = async () => {
-    await api.put(`/products/${product.id}/discount`, {
-      discountType: type || null,
-      discountValue: type ? Number(value) : null,
-    });
+    if (invalidValue) {
+      setError("Enter a discount value greater than 0.");
+      return;
+    }
 
-    onSaved();
+    try {
+      setSaving(true);
+      setError("");
+      await api.put(`/products/${product.id}/discount`, {
+        discountType: type || null,
+        discountValue: type ? numericValue : null,
+      });
+      onSaved();
+    } catch (requestError: unknown) {
+      const response = (
+        requestError as AxiosError<{ message?: string }>
+      ).response;
+      setError(
+        response?.data?.message || "Unable to update this discount.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -37,6 +97,7 @@ export default function DiscountModal({ product, onClose, onSaved }: DiscountMod
           onChange={(e) => {
             setType(e.target.value);
             setValue("");
+            setError("");
           }}
         >
           <option value="" className="bg-zinc-950 text-white">No Discount</option>
@@ -47,11 +108,32 @@ export default function DiscountModal({ product, onClose, onSaved }: DiscountMod
         <input
           type="number"
           disabled={!type}
-          placeholder="Discount value"
+          min="0.01"
+          max={type === "PERCENT" ? 100 : Math.max(0, productPrice - 0.01)}
+          step="0.01"
+          placeholder={
+            type === "PERCENT"
+              ? "Enter percentage (maximum 100)"
+              : `Enter amount below Rs. ${productPrice}`
+          }
           className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-brandRed focus:ring-2 focus:ring-brandRed/20"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => handleValueChange(e.target.value)}
         />
+
+        {type && !error && (
+          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+            {type === "PERCENT"
+              ? "Allowed range: 0.01% to 100%"
+              : `Allowed range: Rs. 0.01 to below Rs. ${productPrice}`}
+          </p>
+        )}
+
+        {error && (
+          <p className="rounded-md border border-brandRed/30 bg-brandRed/10 px-3 py-2 text-xs font-semibold text-red-300">
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end gap-3 mt-4">
           <button
@@ -62,9 +144,10 @@ export default function DiscountModal({ product, onClose, onSaved }: DiscountMod
           </button>
           <button
             onClick={save}
-            className="px-5 py-2.5 rounded-md bg-brandRed text-white text-[11px] font-black uppercase tracking-widest transition-all hover:bg-white hover:text-brandBlack"
+            disabled={saving || invalidValue}
+            className="px-5 py-2.5 rounded-md bg-brandRed text-white text-[11px] font-black uppercase tracking-widest transition-all hover:bg-white hover:text-brandBlack disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

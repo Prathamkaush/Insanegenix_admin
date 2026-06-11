@@ -119,7 +119,7 @@ export default function AdminContacts() {
                           {c.name ? c.name.charAt(0).toUpperCase() : <FiUser />}
                         </div>
                         <div>
-                          <p className="text-xs font-black text-brandBlack uppercase tracking-tight group-hover:text-brandRed transition-colors">
+                          <p className="text-xs font-black text-white uppercase tracking-tight group-hover:text-brandRed transition-colors">
                             {c.name || "Anonymous Client"}
                           </p>
                           <div className="flex items-center gap-1.5 text-gray-400 mt-0.5">
@@ -141,7 +141,7 @@ export default function AdminContacts() {
                     </td>
 
                     <td className="p-5 text-right">
-                      <p className="text-[10px] font-black text-brandBlack uppercase tracking-tight">
+                      <p className="text-[10px] font-black text-white uppercase tracking-tight">
                         {new Date(c.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
                       </p>
                       <p className="text-[9px] text-gray-400 font-bold mt-0.5 uppercase">

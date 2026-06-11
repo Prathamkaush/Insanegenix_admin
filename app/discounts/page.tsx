@@ -27,7 +27,9 @@ export default function DiscountsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const activeOffers = products.filter((p) => p.discountType === "PERCENT").length;
+  const activeOffers = products.filter(
+    (p) => ["PERCENT", "FLAT"].includes(p.discountType) && Number(p.discountValue) > 0,
+  ).length;
 
   return (
     <AdminLayout>
@@ -54,10 +56,17 @@ export default function DiscountsPage() {
         ) : (
           <div className="space-y-4">
             {products.map((p) => {
-              const hasDiscount = p.discountType === "PERCENT";
+              const hasDiscount =
+                ["PERCENT", "FLAT"].includes(p.discountType) &&
+                Number(p.discountValue) > 0;
               const price = Number(p.price);
               const discountValue = Number(p.discountValue || 0);
-              const finalPrice = hasDiscount ? price - (price * discountValue) / 100 : price;
+              const finalPrice =
+                p.discountType === "PERCENT"
+                  ? price - (price * discountValue) / 100
+                  : p.discountType === "FLAT"
+                    ? price - discountValue
+                    : price;
 
               return (
                 <div
@@ -90,7 +99,7 @@ export default function DiscountsPage() {
                             <span className="text-sm text-gray-400 line-through font-bold">Rs. {p.price}</span>
                           </div>
                           <div className="bg-brandRed text-white px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest">
-                            -{p.discountValue}%
+                            -{p.discountValue}{p.discountType === "PERCENT" ? "%" : " Rs."}
                           </div>
                         </>
                       )}

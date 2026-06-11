@@ -1,16 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 import { FiArrowLeft, FiLayers, FiSave } from "react-icons/fi";
 
+type ProductTypeOption = {
+  id: number;
+  name: string;
+};
+
 export default function CreateProductSubtypePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [productTypeId, setProductTypeId] = useState<number | "">("");
-  const [productTypes, setProductTypes] = useState<any[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductTypeOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,8 +25,8 @@ export default function CreateProductSubtypePage() {
       setLoading(true);
       const res = await api.get("/product-types");
       setProductTypes(res.data);
-    } catch (err) {
-      console.error("Failed to load product types", err);
+    } catch (error) {
+      console.error("Failed to load product types", error);
     } finally {
       setLoading(false);
     }
@@ -28,7 +34,9 @@ export default function CreateProductSubtypePage() {
 
   useEffect(() => {
     loadProductTypes();
-  }, []);
+    const selectedTypeId = searchParams.get("typeId");
+    if (selectedTypeId) setProductTypeId(Number(selectedTypeId));
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +45,8 @@ export default function CreateProductSubtypePage() {
     try {
       setSubmitting(true);
       await api.post("/product-subtypes", { name, typeId: productTypeId });
-      router.push("/product-subtypes");
-    } catch (err) {
+      router.push(searchParams.get("returnTo") || "/product-subtypes");
+    } catch {
       alert("Error creating product subtype");
     } finally {
       setSubmitting(false);

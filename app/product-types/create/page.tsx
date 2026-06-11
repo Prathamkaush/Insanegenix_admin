@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FiArrowLeft, FiGrid, FiSave } from "react-icons/fi";
+
+type CategoryOption = {
+  id: number;
+  name: string;
+};
 
 export default function CreateProductTypePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
@@ -28,7 +34,9 @@ export default function CreateProductTypePage() {
 
   useEffect(() => {
     loadCategories();
-  }, []);
+    const selectedCategoryId = searchParams.get("categoryId");
+    if (selectedCategoryId) setCategoryId(selectedCategoryId);
+  }, [searchParams]);
 
   const create = async () => {
     if (!name.trim() || !categoryId) return;
@@ -36,7 +44,7 @@ export default function CreateProductTypePage() {
     try {
       setCreating(true);
       await api.post("/product-types", { name, categoryId: Number(categoryId) });
-      router.push("/product-types");
+      router.push(searchParams.get("returnTo") || "/product-types");
     } catch {
       alert("Error creating product type");
     } finally {

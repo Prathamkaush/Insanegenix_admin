@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -14,6 +14,7 @@ import {
 import { api } from "@/lib/api";
 
 type Variant = {
+  id?: number;
   sku: string;
   flavour: string;
   weightLabel: string;
@@ -71,9 +72,6 @@ export default function SupplementProductForm({
   productId?: string;
   initialProduct?: any;
 }) {
-
-  
-const isHydrating = useRef(false);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -165,11 +163,6 @@ const isHydrating = useRef(false);
       .get(`/product-types?categoryId=${categoryId}`)
       .then((r) => setTypes(r.data || []))
       .catch(console.error);
-
-     if (!isHydrating.current) {
-    setTypeId("");
-    setSubtypeId("");
-  }
 
   }, [categoryId]);
 
@@ -286,6 +279,7 @@ const isHydrating = useRef(false);
     ) {
       setVariants(
         initialProduct.variants.map((v: any) => ({
+          id: v.id,
           sku: v.sku || "",
           flavour: v.flavour || "",
           weightLabel: v.weightLabel || "",
@@ -315,10 +309,6 @@ const isHydrating = useRef(false);
         })),
       );
     }
-
-    setTimeout(() => {
-    isHydrating.current = false;
-  }, 100);
 
   }, [initialProduct]);
 
@@ -412,14 +402,13 @@ const isHydrating = useRef(false);
     );
     fd.append("proteinType", proteinType);
     fd.append("categoryId", categoryId);
-    if (typeId && typeId !== "") fd.append("typeId", typeId);
-    if (subtypeId && subtypeId !== "") fd.append("subtypeId", subtypeId);
+    fd.append("typeId", typeId);
+    fd.append("subtypeId", subtypeId);
     fd.append("status", status);
     fd.append("gstRate", gstRate || "0");
     fd.append("price", defaultVariant?.price || "0");
     fd.append("weight", defaultVariant?.weightKg || "0.5");
     fd.append("stock", String(totalStock));
-    fd.append("sizes", JSON.stringify([]));
     fd.append("variants", JSON.stringify(cleanVariants));
     fd.append(
       "nutritionFacts",
