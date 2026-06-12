@@ -192,6 +192,10 @@ body {
   color: #6b7280 !important;
 }
 
+:is(.admin-page, .admin-content) input.search-input {
+  padding-left: 0 !important;
+}
+
 .admin-table {
   @apply bg-zinc-950/80 border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md rounded-md overflow-hidden;
 }

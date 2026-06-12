@@ -96,6 +96,7 @@ export default function Sidebar() {
           <div className="h-px bg-white/10 my-4 mx-2" />
           {LinkItem("/categories", "Categories", Folder)}
           {LinkItem("/products", "Supplements", Dumbbell)}
+          {LinkItem("/authenticity", "Authenticity", ShieldCheck)}
           {LinkItem("/orders", "Orders", ShoppingCart)}
           {LinkItem("/homepage", "Edit Home", PenIcon)}
           {LinkItem("/coupons", "Coupons", SplinePointer)}

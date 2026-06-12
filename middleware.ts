@@ -9,7 +9,8 @@ export function middleware(req: NextRequest) {
     "/categories",
     "/product-types",
     "/product-subtypes",
-    "/products"
+    "/products",
+    "/authenticity"
   ];
 
   const isProtected = protectedRoutes.some(route =>
@@ -30,5 +31,6 @@ export const config = {
     "/product-types/:path*",
     "/product-subtypes/:path*",
     "/products/:path*",
+    "/authenticity/:path*",
   ],
 };
