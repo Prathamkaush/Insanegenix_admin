@@ -75,7 +75,7 @@ export default function ContactDetail() {
             <section className="admin-surface p-6 md:p-8">
               <div className="flex items-center gap-3 border-b border-gray-50 pb-4 mb-6">
                 <FiMessageSquare className="text-brandRed" />
-                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-brandBlack">Customer Narrative</h2>
+                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Customer Narrative</h2>
               </div>
               <div className="min-h-[200px] rounded-md bg-gray-50 p-6">
                 <p className="text-sm text-brandBlack font-medium leading-relaxed whitespace-pre-line">
@@ -144,7 +144,7 @@ export default function ContactDetail() {
 
             {/* SENDER INTEL */}
             <section className="admin-surface p-6 md:p-8 space-y-8">
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-brandBlack border-b border-gray-50 pb-4 mb-2">Intel</h2>
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white border-b border-gray-50 pb-4 mb-2">Intel</h2>
               
               <div className="space-y-6">
                 <FieldIcon icon={<FiUser />} label="Client" value={contact.name || "Guest User"} />
@@ -175,7 +175,7 @@ function FieldIcon({ icon, label, value, isLowercase = false }: { icon: any, lab
       <div className="text-gray-300 mt-1">{icon}</div>
       <div>
         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{label}</p>
-        <p className={`text-xs font-bold text-brandBlack mt-0.5 ${isLowercase ? 'lowercase' : 'uppercase tracking-tight'}`}>
+        <p className={`text-xs font-bold text-white mt-0.5 ${isLowercase ? 'lowercase' : 'uppercase tracking-tight'}`}>
           {value}
         </p>
       </div>
