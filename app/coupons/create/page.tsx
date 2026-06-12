@@ -84,7 +84,7 @@ export default function CreateCouponPage() {
                 <input
                   type="text"
                   placeholder="COUPON CODE (e.g. SLAY20)"
-                  className="w-full border-b-2 border-gray-100 py-3 outline-none focus:border-brandRed transition-all font-mono font-bold text-lg uppercase placeholder:text-gray-200"
+                  className="w-full border-b-2 border-gray-100 py-3 outline-none focus:border-brandRed pl-2 transition-all font-mono font-bold text-black uppercase placeholder:text-gray-200"
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                   required
@@ -112,7 +112,7 @@ export default function CreateCouponPage() {
                   <input
                     type="number"
                     placeholder="0"
-                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed"
+                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed"
                     value={form.value}
                     onChange={(e) => setForm({ ...form, value: e.target.value })}
                     required
@@ -130,7 +130,7 @@ export default function CreateCouponPage() {
                     <input
                       type="number"
                       placeholder="₹0"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.minOrderValue}
                       onChange={(e) => setForm({ ...form, minOrderValue: e.target.value })}
                     />
@@ -145,7 +145,7 @@ export default function CreateCouponPage() {
                       <input
                         type="number"
                         placeholder="₹ Unlimited"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                         value={form.maxDiscount}
                         onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })}
                       />
@@ -160,7 +160,7 @@ export default function CreateCouponPage() {
                     <input
                       type="number"
                       placeholder="∞"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.usageLimit}
                       onChange={(e) => setForm({ ...form, usageLimit: e.target.value })}
                     />
@@ -172,7 +172,7 @@ export default function CreateCouponPage() {
                     </div>
                     <input
                       type="date"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.expiresAt}
                       onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     />

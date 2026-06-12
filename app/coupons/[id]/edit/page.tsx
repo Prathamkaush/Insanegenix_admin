@@ -132,7 +132,7 @@ export default function EditCouponPage() {
                 <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Discount Type</label>
                   <select
-                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed transition-all"
+                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed transition-all"
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
                   >
@@ -147,7 +147,7 @@ export default function EditCouponPage() {
                   </label>
                   <input
                     type="number"
-                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed transition-all"
+                    className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100 focus:ring-brandRed transition-all"
                     value={form.value}
                     onChange={(e) => setForm({ ...form, value: e.target.value })}
                     required
@@ -165,7 +165,7 @@ export default function EditCouponPage() {
                     <input
                       type="number"
                       placeholder="₹0"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.minOrderValue}
                       onChange={(e) => setForm({ ...form, minOrderValue: e.target.value })}
                     />
@@ -180,7 +180,7 @@ export default function EditCouponPage() {
                       <input
                         type="number"
                         placeholder="₹ Unlimited"
-                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                         value={form.maxDiscount}
                         onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })}
                       />
@@ -195,7 +195,7 @@ export default function EditCouponPage() {
                     <input
                       type="number"
                       placeholder="∞"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.usageLimit}
                       onChange={(e) => setForm({ ...form, usageLimit: e.target.value })}
                     />
@@ -207,7 +207,7 @@ export default function EditCouponPage() {
                     </div>
                     <input
                       type="date"
-                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-xs font-bold outline-none ring-1 ring-gray-100"
+                      className="w-full bg-gray-50 border-none px-4 py-3 rounded-sm text-black font-bold outline-none ring-1 ring-gray-100"
                       value={form.expiresAt}
                       onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
                     />
