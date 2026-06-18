@@ -6,7 +6,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useParams } from "next/navigation";
 import TrackingTimeline from "@/components/TrackingTimeline";
 import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
-import { FiPackage, FiTruck, FiMapPin, FiCreditCard, FiClock } from "react-icons/fi";
+import { FiPackage, FiTruck, FiMapPin, FiCreditCard, FiClock, FiPrinter } from "react-icons/fi";
 
 /* ================= ENHANCED STATUS BADGE ================= */
 const StatusBadge = ({ status }: { status: string }) => {
@@ -168,26 +168,37 @@ export default function OrderDetailsPage() {
                     <FiTruck className="text-brandRed" /> Fulfillment Actions
                 </h2>
                 
-                <div className="flex gap-4">
-                    {order.status === "PENDING" && (
-                        <button
-                            disabled={actionLoading}
-                            onClick={confirmOrder}
-                            className="flex-1 rounded-md bg-white/10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandRed"
-                        >
-                            Confirm Order
-                        </button>
+                <div className="flex flex-col gap-4">
+                    {(order.status === "PENDING" || (order.status === "CONFIRMED" && !order.trackingId)) && (
+                        <div className="flex gap-4">
+                            {order.status === "PENDING" && (
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={confirmOrder}
+                                    className="flex-1 rounded-md bg-white/10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandRed"
+                                >
+                                    Confirm Order
+                                </button>
+                            )}
+
+                            {order.status === "CONFIRMED" && !order.trackingId && (
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={shipOrder}
+                                        className="flex-1 rounded-md bg-brandRed py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack"
+                                    >
+                                        Ship with Delhivery
+                                    </button>
+                            )}
+                        </div>
                     )}
 
-                    {order.status === "CONFIRMED" && !order.trackingId && (
-                        <button
-                            disabled={actionLoading}
-                            onClick={shipOrder}
-                            className="flex-1 rounded-md bg-brandRed py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack"
-                        >
-                            Ship with Delhivery
-                        </button>
-                    )}
+                    <button
+                        onClick={() => window.open(`/orders/${order.id}/invoice`, "_blank")}
+                        className="w-full rounded-md border border-white/10 bg-zinc-900 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack flex items-center justify-center gap-2"
+                    >
+                        <FiPrinter size={14} /> Download Invoice
+                    </button>
                 </div>
 
                 {order.trackingId && (

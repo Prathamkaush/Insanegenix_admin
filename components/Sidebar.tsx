@@ -20,6 +20,7 @@ import {
   Phone,
   ShieldCheck,
   Dumbbell,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -98,6 +99,7 @@ export default function Sidebar() {
           {LinkItem("/products", "Supplements", Dumbbell)}
           {LinkItem("/authenticity", "Authenticity", ShieldCheck)}
           {LinkItem("/orders", "Orders", ShoppingCart)}
+          {LinkItem("/blogs", "Blogs", FileText)}
           {LinkItem("/homepage", "Edit Home", PenIcon)}
           {LinkItem("/coupons", "Coupons", SplinePointer)}
           {LinkItem("/feedback", "Feedback", MessageSquare)}
