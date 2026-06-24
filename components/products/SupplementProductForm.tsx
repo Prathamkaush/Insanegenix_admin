@@ -361,8 +361,15 @@ export default function SupplementProductForm({
       return;
     }
 
-    const cleanVariants = variants
-      .filter((variant) => variant.price && variant.weightLabel)
+    const sellableVariants = variants.filter(
+      (variant) => variant.price && variant.weightLabel,
+    );
+    const defaultVariantIndex = sellableVariants.findIndex(
+      (variant) => variant.isDefault,
+    );
+    const selectedDefaultIndex =
+      defaultVariantIndex === -1 ? 0 : defaultVariantIndex;
+    const cleanVariants = sellableVariants
       .map((variant, index) => ({
         ...variant,
         mrp: variant.mrp || variant.price,
@@ -370,7 +377,7 @@ export default function SupplementProductForm({
         servings: variant.servings ? Number(variant.servings) : null,
         discountValue: variant.discountValue || null,
         weightKg: variant.weightKg ? Number(variant.weightKg) : null,
-        isDefault: variant.isDefault || index === 0,
+        isDefault: index === selectedDefaultIndex,
       }));
 
     if (!cleanVariants.length) {
