@@ -10,6 +10,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Video,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -62,6 +63,8 @@ const imageUrl = (fileName?: string | null) =>
   fileName
     ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${fileName}`
     : "";
+
+const mediaUrl = imageUrl;
 
 export default function SupplementProductForm({
   mode,
@@ -139,13 +142,19 @@ export default function SupplementProductForm({
     null,
     null,
     null,
+    null,
+    null,
   ]);
   const [existingImages, setExistingImages] = useState<(string | null)[]>([
     null,
     null,
     null,
     null,
+    null,
+    null,
   ]);
+  const [video, setVideo] = useState<File | null>(null);
+  const [existingVideo, setExistingVideo] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -271,7 +280,10 @@ export default function SupplementProductForm({
       initialProduct.img2 || null,
       initialProduct.img3 || null,
       initialProduct.img4 || null,
+      initialProduct.img5 || null,
+      initialProduct.img6 || null,
     ]);
+    setExistingVideo(initialProduct.video || null);
 
     if (
       Array.isArray(initialProduct.variants) &&
@@ -341,6 +353,11 @@ export default function SupplementProductForm({
       setExistingImages((prev) =>
         prev.map((img, i) => (i === index ? null : img)),
       );
+  };
+
+  const handleVideoChange = (file: File | null) => {
+    setVideo(file);
+    if (file) setExistingVideo(null);
   };
 
   const appendArrayLines = (fd: FormData, key: string, value: string) => {
@@ -448,6 +465,7 @@ export default function SupplementProductForm({
     appendArrayLines(fd, "keyBenefits", keyBenefitsText);
     appendArrayLines(fd, "certifications", certificationsText);
     images.forEach((img, i) => img && fd.append(`image${i + 1}`, img));
+    if (video) fd.append("video", video);
 
     try {
       setSaving(true);
@@ -860,7 +878,7 @@ export default function SupplementProductForm({
 
           <Section title="Product Media">
             <div className="grid grid-cols-2 gap-3">
-              {[0, 1, 2, 3].map((i) => {
+              {[0, 1, 2, 3, 4, 5].map((i) => {
                 const preview = images[i]
                   ? URL.createObjectURL(images[i]!)
                   : imageUrl(existingImages[i]);
@@ -892,6 +910,36 @@ export default function SupplementProductForm({
                 );
               })}
             </div>
+            <label className="mt-3 flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-white/10 bg-white/5">
+              {video ? (
+                <video
+                  src={URL.createObjectURL(video)}
+                  className="h-full w-full object-cover"
+                  muted
+                  controls
+                />
+              ) : existingVideo ? (
+                <video
+                  src={mediaUrl(existingVideo)}
+                  className="h-full w-full object-cover"
+                  muted
+                  controls
+                />
+              ) : (
+                <span className="flex flex-col items-center justify-center gap-2 text-zinc-500">
+                  <Video size={26} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    Product video
+                  </span>
+                </span>
+              )}
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => handleVideoChange(e.target.files?.[0] || null)}
+              />
+            </label>
           </Section>
 
           <Section title="Badges & Shipping">

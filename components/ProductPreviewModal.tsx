@@ -13,7 +13,14 @@ export default function ProductPreviewModal({ isOpen, onClose, product }: Produc
 
   const variants = product.variants || [];
   const defaultVariant = variants.find((v: any) => v.isDefault) || variants[0];
-  const images = [product.img1, product.img2, product.img3, product.img4].filter(Boolean);
+  const images = [
+    product.img1,
+    product.img2,
+    product.img3,
+    product.img4,
+    product.img5,
+    product.img6,
+  ].filter(Boolean);
   const price = Number(defaultVariant?.price || product.finalPrice || product.price || 0);
   const mrp = Number(defaultVariant?.mrp || product.price || 0);
 
@@ -39,6 +46,13 @@ export default function ProductPreviewModal({ isOpen, onClose, product }: Produc
             ) : (
               <img src="/insanegenix/product/Whey.png" alt="" className="w-full h-64 object-contain rounded-md border border-white/10 bg-white/5 p-8" />
             )}
+            {product.video ? (
+              <video
+                src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/products/${product.video}`}
+                className="w-full h-52 object-cover rounded-md border border-white/10 bg-white/5"
+                controls
+              />
+            ) : null}
           </div>
 
           <div className="lg:col-span-2 space-y-6">
