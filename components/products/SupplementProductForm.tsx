@@ -28,6 +28,15 @@ type Variant = {
   stock: string;
   weightKg: string;
   isDefault: boolean;
+  image1: string | null;
+  image2: string | null;
+  image3: string | null;
+  image4: string | null;
+  image5: string | null;
+  image6: string | null;
+  video: string | null;
+  imageFiles: (File | null)[];
+  videoFile: File | null;
 };
 
 type NutritionFact = {
@@ -50,6 +59,15 @@ const emptyVariant = (): Variant => ({
   stock: "0",
   weightKg: "",
   isDefault: false,
+  image1: null,
+  image2: null,
+  image3: null,
+  image4: null,
+  image5: null,
+  image6: null,
+  video: null,
+  imageFiles: [null, null, null, null, null, null],
+  videoFile: null,
 });
 
 const emptyNutrition = (): NutritionFact => ({
@@ -97,6 +115,9 @@ export default function SupplementProductForm({
   const [subtypeId, setSubtypeId] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [gstRate, setGstRate] = useState("0");
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [metaKeywords, setMetaKeywords] = useState("");
 
   const [servingSize, setServingSize] = useState("");
   const [servingsPerContainer, setServingsPerContainer] = useState("");
@@ -211,6 +232,9 @@ export default function SupplementProductForm({
       String(initialProduct.subtype?.id || initialProduct.subtypeId || ""),
     );
     setStatus(initialProduct.status || "ACTIVE");
+    setMetaTitle(initialProduct.metaTitle || "");
+    setMetaDescription(initialProduct.metaDescription || "");
+    setMetaKeywords(initialProduct.metaKeywords || "");
     setGstRate(
       initialProduct.gstRate !== undefined && initialProduct.gstRate !== null
         ? String(initialProduct.gstRate)
@@ -304,6 +328,15 @@ export default function SupplementProductForm({
           stock: v.stock ? String(v.stock) : "0",
           weightKg: v.weightKg ? String(v.weightKg) : "",
           isDefault: Boolean(v.isDefault),
+          image1: v.image1 || null,
+          image2: v.image2 || null,
+          image3: v.image3 || null,
+          image4: v.image4 || null,
+          image5: v.image5 || null,
+          image6: v.image6 || null,
+          video: v.video || null,
+          imageFiles: [null, null, null, null, null, null],
+          videoFile: null,
         })),
       );
     }
@@ -360,6 +393,45 @@ export default function SupplementProductForm({
     if (file) setExistingVideo(null);
   };
 
+  const handleVariantImageChange = (
+    variantIndex: number,
+    imageIndex: number,
+    file: File | null,
+  ) => {
+    setVariants((prev) =>
+      prev.map((variant, index) => {
+        if (index !== variantIndex) return variant;
+
+        const imageFiles = variant.imageFiles.map((item, i) =>
+          i === imageIndex ? file : item,
+        );
+        const imageKey = `image${imageIndex + 1}` as
+          | "image1"
+          | "image2"
+          | "image3"
+          | "image4"
+          | "image5"
+          | "image6";
+
+        return {
+          ...variant,
+          imageFiles,
+          ...(file ? { [imageKey]: null } : {}),
+        };
+      }),
+    );
+  };
+
+  const handleVariantVideoChange = (variantIndex: number, file: File | null) => {
+    setVariants((prev) =>
+      prev.map((variant, index) =>
+        index === variantIndex
+          ? { ...variant, videoFile: file, ...(file ? { video: null } : {}) }
+          : variant,
+      ),
+    );
+  };
+
   const appendArrayLines = (fd: FormData, key: string, value: string) => {
     fd.append(
       key,
@@ -378,22 +450,35 @@ export default function SupplementProductForm({
       return;
     }
 
-    const sellableVariants = variants.filter(
-      (variant) => variant.price && variant.weightLabel,
-    );
+    const sellableVariants = variants
+      .map((variant) => ({ variant }))
+      .filter(({ variant }) => variant.price && variant.weightLabel);
     const defaultVariantIndex = sellableVariants.findIndex(
-      (variant) => variant.isDefault,
+      ({ variant }) => variant.isDefault,
     );
     const selectedDefaultIndex =
       defaultVariantIndex === -1 ? 0 : defaultVariantIndex;
     const cleanVariants = sellableVariants
-      .map((variant, index) => ({
-        ...variant,
-        mrp: variant.mrp || variant.price,
-        stock: Number(variant.stock || 0),
+      .map(({ variant }, index) => ({
+        id: variant.id,
+        sku: variant.sku,
+        flavour: variant.flavour,
+        weightLabel: variant.weightLabel,
+        netQuantity: variant.netQuantity,
         servings: variant.servings ? Number(variant.servings) : null,
+        mrp: variant.mrp || variant.price,
+        price: variant.price,
+        discountType: variant.discountType,
         discountValue: variant.discountValue || null,
+        stock: Number(variant.stock || 0),
         weightKg: variant.weightKg ? Number(variant.weightKg) : null,
+        image1: variant.image1,
+        image2: variant.image2,
+        image3: variant.image3,
+        image4: variant.image4,
+        image5: variant.image5,
+        image6: variant.image6,
+        video: variant.video,
         isDefault: index === selectedDefaultIndex,
       }));
 
@@ -430,6 +515,9 @@ export default function SupplementProductForm({
     fd.append("subtypeId", subtypeId);
     fd.append("status", status);
     fd.append("gstRate", gstRate || "0");
+    fd.append("metaTitle", metaTitle);
+    fd.append("metaDescription", metaDescription);
+    fd.append("metaKeywords", metaKeywords);
     fd.append("price", defaultVariant?.price || "0");
     fd.append("weight", defaultVariant?.weightKg || "0.5");
     fd.append("stock", String(totalStock));
@@ -466,6 +554,12 @@ export default function SupplementProductForm({
     appendArrayLines(fd, "certifications", certificationsText);
     images.forEach((img, i) => img && fd.append(`image${i + 1}`, img));
     if (video) fd.append("video", video);
+    sellableVariants.forEach(({ variant }, cleanIndex) => {
+      variant.imageFiles.forEach((file, imageIndex) => {
+        if (file) fd.append(`variant_${cleanIndex}_image${imageIndex + 1}`, file);
+      });
+      if (variant.videoFile) fd.append(`variant_${cleanIndex}_video`, variant.videoFile);
+    });
 
     try {
       setSaving(true);
@@ -516,6 +610,31 @@ export default function SupplementProductForm({
                 label="Full description"
                 value={description}
                 onChange={setDescription}
+                className="md:col-span-2"
+              />
+            </div>
+          </Section>
+
+          <Section title="Search Metadata">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field
+                label="Meta title"
+                value={metaTitle}
+                onChange={setMetaTitle}
+                placeholder="SEO title shown in search"
+                className="md:col-span-2"
+              />
+              <TextArea
+                label="Meta description"
+                value={metaDescription}
+                onChange={setMetaDescription}
+                className="md:col-span-2"
+              />
+              <Field
+                label="Meta tags / keywords"
+                value={metaKeywords}
+                onChange={setMetaKeywords}
+                placeholder="whey protein, creatine, supplement"
                 className="md:col-span-2"
               />
             </div>
@@ -706,6 +825,96 @@ export default function SupplementProductForm({
                         updateVariant(index, { discountValue: v })
                       }
                     />
+                  </div>
+                  <div className="mt-4 rounded-md border border-white/5 bg-black/20 p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                        Variant media
+                      </p>
+                      <p className="text-[10px] font-bold text-zinc-500">
+                        Used when this variant is selected
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                      {[0, 1, 2, 3, 4, 5].map((mediaIndex) => {
+                        const imageKey = `image${mediaIndex + 1}` as
+                          | "image1"
+                          | "image2"
+                          | "image3"
+                          | "image4"
+                          | "image5"
+                          | "image6";
+                        const preview = variant.imageFiles[mediaIndex]
+                          ? URL.createObjectURL(variant.imageFiles[mediaIndex]!)
+                          : imageUrl(variant[imageKey]);
+
+                        return (
+                          <label
+                            key={imageKey}
+                            className="relative aspect-square cursor-pointer overflow-hidden rounded-md border border-dashed border-white/10 bg-white/5"
+                          >
+                            {preview ? (
+                              <img
+                                src={preview}
+                                alt={`${variant.flavour || "Variant"} media`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-zinc-500">
+                                <ImagePlus size={18} />
+                              </span>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleVariantImageChange(
+                                  index,
+                                  mediaIndex,
+                                  e.target.files?.[0] || null,
+                                )
+                              }
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <label className="mt-2 flex aspect-video cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-white/10 bg-white/5">
+                      {variant.videoFile ? (
+                        <video
+                          src={URL.createObjectURL(variant.videoFile)}
+                          className="h-full w-full object-cover"
+                          muted
+                          controls
+                        />
+                      ) : variant.video ? (
+                        <video
+                          src={mediaUrl(variant.video)}
+                          className="h-full w-full object-cover"
+                          muted
+                          controls
+                        />
+                      ) : (
+                        <span className="flex flex-col items-center justify-center gap-2 text-zinc-500">
+                          <Video size={22} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">
+                            Variant video
+                          </span>
+                        </span>
+                      )}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={(e) =>
+                          handleVariantVideoChange(
+                            index,
+                            e.target.files?.[0] || null,
+                          )
+                        }
+                      />
+                    </label>
                   </div>
                 </div>
               ))}
