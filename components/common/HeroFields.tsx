@@ -116,6 +116,12 @@ export default function HeroFields({
                   onChange={(ids) => updateSlide(index, "mediaId", ids[0] ?? null)}
                   multiple={false}
                   accept={["image/*", "video/*"]}
+                  guidance={{
+                    label: "Desktop hero ratio",
+                    ratio: "1440:736",
+                    size: "1440 x 736 px",
+                    previewClassName: "aspect-[1440/736]",
+                  }}
                 />
 
                 <div className="mt-5">
@@ -125,6 +131,12 @@ export default function HeroFields({
                     onChange={(ids) => updateSlide(index, "mobileMediaId", ids[0] ?? null)}
                     multiple={false}
                     accept={["image/*", "video/*"]}
+                    guidance={{
+                      label: "Mobile hero ratio",
+                      ratio: "768:1376",
+                      size: "768 x 1376 px",
+                      previewClassName: "aspect-[768/1376]",
+                    }}
                   />
                 </div>
               </div>
