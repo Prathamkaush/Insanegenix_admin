@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import UsersTable from "@/components/common/UsersTable";
 import UsersFilters from "@/components/UsersFilters";
@@ -18,34 +18,51 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"new" | "old">("new");
   const [range, setRange] = useState<"7d" | "30d" | undefined>();
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get("/admin/users", {
+        params: {
+          page,
+          limit,
+          search: search || undefined,
+          sort,
+          range,
+        },
+      });
+
+      setUsers(res.data.data);
+      setTotalPages(res.data.meta.totalPages);
+    } catch (err: any) {
+      console.error("Failed to fetch users:", err);
+      setError(err.response?.data?.message || "Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, search, sort, range]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get("/admin/users", {
-          params: {
-            page,
-            limit,
-            search: search || undefined,
-            sort,
-            range,
-          },
-        });
-
-        setUsers(res.data.data);
-        setTotalPages(res.data.meta.totalPages);
-      } catch (err: any) {
-        console.error("Failed to fetch users:", err);
-        setError(err.response?.data?.message || "Failed to fetch users");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [page, limit, search, sort, range]);
+  }, [fetchUsers]);
+
+  const updateUserBlock = async (userId: number, shouldBlock: boolean) => {
+    if (shouldBlock && !confirm("Block this user from logging in?")) return;
+    if (!shouldBlock && !confirm("Unblock this user and reset failed login attempts?")) return;
+
+    setUpdatingUserId(userId);
+    setError(null);
+    try {
+      const res = await api.patch(`/admin/users/${userId}/${shouldBlock ? "block" : "unblock"}`);
+      setUsers((current) => current.map((user) => (user.id === userId ? res.data : user)));
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to update user status");
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -90,7 +107,12 @@ export default function AdminUsersPage() {
           )}
 
           <div className="min-h-[400px]">
-            <UsersTable users={users} loading={loading} />
+            <UsersTable
+              users={users}
+              loading={loading}
+              updatingUserId={updatingUserId}
+              onBlockChange={updateUserBlock}
+            />
           </div>
 
           {!loading && users.length > 0 && (

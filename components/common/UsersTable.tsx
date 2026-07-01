@@ -1,9 +1,13 @@
 export default function UsersTable({
   users,
   loading,
+  updatingUserId,
+  onBlockChange,
 }: {
   users: any[];
   loading: boolean;
+  updatingUserId?: number | null;
+  onBlockChange?: (userId: number, shouldBlock: boolean) => void;
 }) {
   if (loading) {
     return (
@@ -24,7 +28,10 @@ export default function UsersTable({
             <th className="admin-th text-left">Phone</th>
             <th className="admin-th text-center">Role</th>
             <th className="admin-th text-center">Verified</th>
+            <th className="admin-th text-center">Status</th>
+            <th className="admin-th text-center">Failed</th>
             <th className="admin-th text-left">Joined</th>
+            <th className="admin-th text-right">Action</th>
           </tr>
         </thead>
 
@@ -45,7 +52,7 @@ export default function UsersTable({
 
               <td className="p-4 text-center">
                 <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md ${
-                  u.role === "admin"
+                  String(u.role).toUpperCase() === "ADMIN"
                     ? "bg-brandRed text-white"
                     : "bg-white/5 text-zinc-400"
                 }`}>
@@ -65,12 +72,41 @@ export default function UsersTable({
                 )}
               </td>
 
+              <td className="p-4 text-center">
+                <span className={`inline-flex rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
+                  u.isBlocked
+                    ? "bg-brandRed/15 text-brandRed"
+                    : "bg-emerald-950/20 text-emerald-400"
+                }`}>
+                  {u.isBlocked ? "Blocked" : "Active"}
+                </span>
+              </td>
+
+              <td className="p-4 text-center text-zinc-400 font-black">
+                {u.failedLoginAttempts || 0}/5
+              </td>
+
               <td className="p-4 text-zinc-400 font-medium">
                 {new Date(u.createdAt).toLocaleDateString("en-IN", {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
                 })}
+              </td>
+
+              <td className="p-4 text-right">
+                <button
+                  type="button"
+                  disabled={!onBlockChange || updatingUserId === u.id || String(u.role).toUpperCase() === "ADMIN"}
+                  onClick={() => onBlockChange?.(u.id, !u.isBlocked)}
+                  className={`inline-flex items-center rounded-md px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                    u.isBlocked
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "border border-brandRed/30 text-brandRed hover:bg-brandRed hover:text-white"
+                  }`}
+                >
+                  {String(u.role).toUpperCase() === "ADMIN" ? "Admin" : u.isBlocked ? "Unblock" : "Block"}
+                </button>
               </td>
             </tr>
           ))}
