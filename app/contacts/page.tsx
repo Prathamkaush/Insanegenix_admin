@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import { FiArrowRight, FiInbox, FiMail, FiRefreshCw, FiSearch, FiUser } from "react-icons/fi";
+import { FiArrowRight, FiCheckSquare, FiInbox, FiMail, FiRefreshCw, FiSearch, FiSquare, FiTrash2, FiUser } from "react-icons/fi";
 
 export default function AdminContacts() {
   const [data, setData] = useState<any[]>([]);
@@ -13,8 +13,10 @@ export default function AdminContacts() {
   const [pages, setPages] = useState(1);
   const [status, setStatus] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
-  const fetchContacts = async () => {
+  const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/contact", {
@@ -27,14 +29,55 @@ export default function AdminContacts() {
       });
       setData(res.data.items);
       setPages(res.data.meta.pages);
+      setSelectedIds([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, status]);
 
   useEffect(() => {
     fetchContacts();
-  }, [page, status]);
+  }, [fetchContacts]);
+
+  const allSelected = useMemo(
+    () => data.length > 0 && selectedIds.length === data.length,
+    [data.length, selectedIds.length],
+  );
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? [] : data.map((item) => item.id));
+  };
+
+  const deleteContact = async (id: number) => {
+    if (!confirm("Delete this contact message permanently?")) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/contact/${id}`);
+      setData((current) => current.filter((item) => item.id !== id));
+      setSelectedIds((current) => current.filter((item) => item !== id));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedIds.length) return;
+    if (!confirm(`Delete ${selectedIds.length} selected contact message(s)?`)) return;
+    setDeleting(true);
+    try {
+      await api.delete("/contact/bulk", { data: { ids: selectedIds } });
+      setData((current) => current.filter((item) => !selectedIds.includes(item.id)));
+      setSelectedIds([]);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -86,26 +129,49 @@ export default function AdminContacts() {
           </div>
         </div>
 
+        {data.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-white/10 bg-brandBlack p-3 shadow-sm">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="inline-flex items-center gap-2 rounded-md border border-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:border-brandRed hover:text-brandRed"
+            >
+              {allSelected ? <FiCheckSquare size={14} /> : <FiSquare size={14} />}
+              Select all
+            </button>
+            <button
+              type="button"
+              disabled={!selectedIds.length || deleting}
+              onClick={deleteSelected}
+              className="inline-flex items-center gap-2 rounded-md bg-brandRed px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-brandBlack disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FiTrash2 size={14} />
+              Delete selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
+
         <div className="admin-table">
           <table className="w-full min-w-[760px] text-left border-collapse">
             <thead>
               <tr className="admin-table-head">
+                <th className="admin-th text-left">Select</th>
                 <th className="admin-th text-left">Identity</th>
                 <th className="admin-th text-center">Status</th>
                 <th className="admin-th text-right">Timestamp</th>
-                <th className="admin-th text-right">Open</th>
+                <th className="admin-th text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="p-20 text-center text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 animate-pulse">
+                  <td colSpan={5} className="p-20 text-center text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 animate-pulse">
                     Loading inquiries...
                   </td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="p-20 text-center">
+                  <td colSpan={5} className="p-20 text-center">
                     <FiInbox className="mx-auto text-gray-200 mb-4" size={48} />
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">No inquiries stored</p>
                   </td>
@@ -113,6 +179,17 @@ export default function AdminContacts() {
               ) : (
                 data.map((c) => (
                   <tr key={c.id} className="admin-row group">
+                    <td className="p-5">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelected(c.id)}
+                        className="inline-flex text-gray-400 transition-colors hover:text-brandRed"
+                        aria-label={`Select contact ${c.id}`}
+                      >
+                        {selectedIds.includes(c.id) ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
+                      </button>
+                    </td>
+
                     <td className="p-5">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-md bg-brandBlack text-white flex items-center justify-center text-[10px] font-black group-hover:bg-brandRed transition-colors">
@@ -150,6 +227,15 @@ export default function AdminContacts() {
                     </td>
 
                     <td className="p-5 text-right">
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        onClick={() => deleteContact(c.id)}
+                        className="mr-2 inline-flex p-2 rounded-md text-gray-300 transition-all hover:bg-brandRed hover:text-white disabled:opacity-40"
+                        aria-label={`Delete contact ${c.id}`}
+                      >
+                        <FiTrash2 size={18} />
+                      </button>
                       <Link href={`/contacts/${c.id}`} className="inline-flex p-2 rounded-md text-gray-300 group-hover:text-white group-hover:bg-brandRed transition-all">
                         <FiArrowRight size={18} />
                       </Link>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { FiCheck, FiStar, FiX } from "react-icons/fi";
+import { FiCheck, FiCheckSquare, FiSquare, FiStar, FiTrash2, FiX } from "react-icons/fi";
 import AdminLayout from "@/components/AdminLayout";
 import { api } from "@/lib/api";
 
@@ -35,6 +35,8 @@ export default function AdminReviewsPage() {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   const loadReviews = useCallback(async () => {
@@ -45,6 +47,7 @@ export default function AdminReviewsPage() {
       const res = await api.get(`/reviews/admin?page=${page}&limit=5`);
       setReviews(res.data.data || []);
       setPages(res.data.pages || 1);
+      setSelectedIds([]);
     } catch (err: unknown) {
       setError(
         axios.isAxiosError(err)
@@ -77,6 +80,62 @@ export default function AdminReviewsPage() {
       );
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const allSelected = useMemo(
+    () => reviews.length > 0 && selectedIds.length === reviews.length,
+    [reviews.length, selectedIds.length],
+  );
+
+  const toggleSelected = (reviewId: number) => {
+    setSelectedIds((current) =>
+      current.includes(reviewId) ? current.filter((id) => id !== reviewId) : [...current, reviewId],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? [] : reviews.map((review) => review.id));
+  };
+
+  const deleteReview = async (reviewId: number) => {
+    if (!confirm("Delete this review permanently?")) return;
+    setDeleting(true);
+    setError("");
+
+    try {
+      await api.delete(`/reviews/admin/${reviewId}`);
+      setReviews((current) => current.filter((review) => review.id !== reviewId));
+      setSelectedIds((current) => current.filter((id) => id !== reviewId));
+    } catch (err: unknown) {
+      setError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.message || "Failed to delete review."
+          : "Failed to delete review.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedIds.length) return;
+    if (!confirm(`Delete ${selectedIds.length} selected review(s)?`)) return;
+    setDeleting(true);
+    setError("");
+
+    try {
+      await api.delete("/reviews/admin/bulk", { data: { ids: selectedIds } });
+      setReviews((current) => current.filter((review) => !selectedIds.includes(review.id)));
+      setSelectedIds([]);
+    } catch (err: unknown) {
+      setError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.message || "Failed to delete selected reviews."
+          : "Failed to delete selected reviews.",
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -120,12 +179,54 @@ export default function AdminReviewsPage() {
         )}
 
         {!loading && reviews.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brandBlack transition-all hover:border-brandRed hover:text-brandRed"
+            >
+              {allSelected ? <FiCheckSquare size={14} /> : <FiSquare size={14} />}
+              Select all
+            </button>
+            <button
+              type="button"
+              disabled={!selectedIds.length || deleting}
+              onClick={deleteSelected}
+              className="inline-flex items-center gap-2 rounded-md bg-brandRed px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandBlack disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FiTrash2 size={14} />
+              Delete selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
+
+        {!loading && reviews.length > 0 && (
           <div className="divide-y divide-gray-100 rounded-md border border-zinc-200 bg-white shadow-sm">
             {reviews.map((review) => (
               <div
                 key={review.id}
                 className="space-y-2 p-5 transition-colors hover:bg-gray-50/60"
               >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleSelected(review.id)}
+                    className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-colors hover:text-brandRed"
+                  >
+                    {selectedIds.includes(review.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                    Select
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => deleteReview(review.id)}
+                    className="inline-flex items-center gap-2 rounded-md border border-red-100 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-brandRed transition-all hover:bg-brandRed hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <FiTrash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="font-black uppercase tracking-tight text-brandBlack">
                     {review.product.title}

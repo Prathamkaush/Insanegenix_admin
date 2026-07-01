@@ -1,28 +1,78 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import AdminLayout from "@/components/AdminLayout";
-import { FiMessageSquare, FiX } from "react-icons/fi";
+import { FiCheckSquare, FiMessageSquare, FiSquare, FiTrash2, FiX } from "react-icons/fi";
 
 export default function AdminFeedbackPage() {
   const [feedback, setFeedback] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [selected, setSelected] = useState<any | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
+  const loadFeedback = useCallback(() => {
     api
       .get(`/feedback?page=${page}&limit=5`)
       .then((res) => {
         setFeedback(res.data.data || []);
         setPages(res.data.pages || 1);
+        setSelectedIds([]);
       })
       .catch(() => {
         setFeedback([]);
         setPages(1);
+        setSelectedIds([]);
       });
   }, [page]);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [loadFeedback]);
+
+  const allSelected = useMemo(
+    () => feedback.length > 0 && selectedIds.length === feedback.length,
+    [feedback.length, selectedIds.length],
+  );
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? [] : feedback.map((item) => item.id));
+  };
+
+  const deleteFeedback = async (id: number) => {
+    if (!confirm("Delete this feedback permanently?")) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/feedback/${id}`);
+      setFeedback((current) => current.filter((item) => item.id !== id));
+      setSelectedIds((current) => current.filter((item) => item !== id));
+      if (selected?.id === id) setSelected(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedIds.length) return;
+    if (!confirm(`Delete ${selectedIds.length} selected feedback item(s)?`)) return;
+    setDeleting(true);
+    try {
+      await api.delete("/feedback/bulk", { data: { ids: selectedIds } });
+      setFeedback((current) => current.filter((item) => !selectedIds.includes(item.id)));
+      if (selected && selectedIds.includes(selected.id)) setSelected(null);
+      setSelectedIds([]);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -41,6 +91,28 @@ export default function AdminFeedbackPage() {
           </div>
         </div>
 
+        {feedback.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brandBlack transition-all hover:border-brandRed hover:text-brandRed"
+            >
+              {allSelected ? <FiCheckSquare size={14} /> : <FiSquare size={14} />}
+              Select all
+            </button>
+            <button
+              type="button"
+              disabled={!selectedIds.length || deleting}
+              onClick={deleteSelected}
+              className="inline-flex items-center gap-2 rounded-md bg-brandRed px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandBlack disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FiTrash2 size={14} />
+              Delete selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
+
         <div className="space-y-3">
           {feedback.length === 0 && (
             <div className="bg-white border-2 border-dashed border-zinc-200 rounded-md p-14 text-center">
@@ -49,28 +121,50 @@ export default function AdminFeedbackPage() {
           )}
 
           {feedback.map((f) => (
-            <button
+            <div
               key={f.id}
-              onClick={() => setSelected(f)}
-              className="w-full text-left bg-white border border-zinc-200 rounded-md p-5 hover:shadow-md hover:border-brandRed/30 transition-all"
+              className="bg-white border border-zinc-200 rounded-md p-5 hover:shadow-md hover:border-brandRed/30 transition-all"
             >
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <p className="font-black text-brandBlack uppercase tracking-tight">
-                  {f.user?.name || "Anonymous"}
-                </p>
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  {new Date(f.createdAt).toLocaleDateString()}
-                </span>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => toggleSelected(f.id)}
+                  className="mt-1 text-gray-400 transition-colors hover:text-brandRed"
+                  aria-label={`Select feedback ${f.id}`}
+                >
+                  {selectedIds.includes(f.id) ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
+                </button>
+
+                <button type="button" onClick={() => setSelected(f)} className="flex-1 text-left">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <p className="font-black text-brandBlack uppercase tracking-tight">
+                      {f.user?.name || "Anonymous"}
+                    </p>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      {new Date(f.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brandRed mt-3">
+                    Page: {f.page || "N/A"}
+                  </p>
+
+                  <p className="text-sm mt-3 line-clamp-2 text-gray-600">
+                    {f.message}
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => deleteFeedback(f.id)}
+                  className="self-start inline-flex items-center gap-2 rounded-md border border-red-100 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-brandRed transition-all hover:bg-brandRed hover:text-white disabled:opacity-40"
+                >
+                  <FiTrash2 size={14} />
+                  Delete
+                </button>
               </div>
-
-              <p className="text-[10px] font-black uppercase tracking-widest text-brandRed mt-3">
-                Page: {f.page || "N/A"}
-              </p>
-
-              <p className="text-sm mt-3 line-clamp-2 text-gray-600">
-                {f.message}
-              </p>
-            </button>
+            </div>
           ))}
         </div>
 
