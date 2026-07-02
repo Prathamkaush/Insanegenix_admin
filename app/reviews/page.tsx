@@ -33,9 +33,12 @@ export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [ratingFilter, setRatingFilter] = useState<"all" | number>("all");
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,10 +47,19 @@ export default function AdminReviewsPage() {
     setError("");
 
     try {
-      const res = await api.get(`/reviews/admin?page=${page}&limit=5`);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "5",
+      });
+      if (ratingFilter !== "all") params.set("rating", String(ratingFilter));
+
+      const res = await api.get(`/reviews/admin?${params.toString()}`);
       setReviews(res.data.data || []);
+      setPage(res.data.page || 1);
       setPages(res.data.pages || 1);
+      setTotal(res.data.total || 0);
       setSelectedIds([]);
+      setAllMatchingSelected(false);
     } catch (err: unknown) {
       setError(
         axios.isAxiosError(err)
@@ -57,7 +69,7 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, ratingFilter]);
 
   useEffect(() => {
     loadReviews();
@@ -84,18 +96,36 @@ export default function AdminReviewsPage() {
   };
 
   const allSelected = useMemo(
-    () => reviews.length > 0 && selectedIds.length === reviews.length,
-    [reviews.length, selectedIds.length],
+    () => !allMatchingSelected && reviews.length > 0 && selectedIds.length === reviews.length,
+    [allMatchingSelected, reviews.length, selectedIds.length],
   );
 
+  const selectedCount = allMatchingSelected ? total : selectedIds.length;
+  const hasMoreMatchingReviews = total > reviews.length;
+  const activeRatingLabel = ratingFilter === "all" ? "all ratings" : `${ratingFilter} star`;
+
   const toggleSelected = (reviewId: number) => {
+    setAllMatchingSelected(false);
     setSelectedIds((current) =>
       current.includes(reviewId) ? current.filter((id) => id !== reviewId) : [...current, reviewId],
     );
   };
 
   const toggleSelectAll = () => {
+    setAllMatchingSelected(false);
     setSelectedIds(allSelected ? [] : reviews.map((review) => review.id));
+  };
+
+  const selectAllMatching = () => {
+    setAllMatchingSelected(true);
+    setSelectedIds([]);
+  };
+
+  const changeRatingFilter = (rating: "all" | number) => {
+    setRatingFilter(rating);
+    setPage(1);
+    setSelectedIds([]);
+    setAllMatchingSelected(false);
   };
 
   const deleteReview = async (reviewId: number) => {
@@ -105,8 +135,7 @@ export default function AdminReviewsPage() {
 
     try {
       await api.delete(`/reviews/admin/${reviewId}`);
-      setReviews((current) => current.filter((review) => review.id !== reviewId));
-      setSelectedIds((current) => current.filter((id) => id !== reviewId));
+      await loadReviews();
     } catch (err: unknown) {
       setError(
         axios.isAxiosError(err)
@@ -119,15 +148,26 @@ export default function AdminReviewsPage() {
   };
 
   const deleteSelected = async () => {
-    if (!selectedIds.length) return;
-    if (!confirm(`Delete ${selectedIds.length} selected review(s)?`)) return;
+    if (!selectedCount) return;
+    const confirmText = allMatchingSelected
+      ? `Delete all ${total} review(s) matching ${activeRatingLabel}?`
+      : `Delete ${selectedIds.length} selected review(s) from this page?`;
+    if (!confirm(confirmText)) return;
     setDeleting(true);
     setError("");
 
     try {
-      await api.delete("/reviews/admin/bulk", { data: { ids: selectedIds } });
-      setReviews((current) => current.filter((review) => !selectedIds.includes(review.id)));
+      await api.delete("/reviews/admin/bulk", {
+        data: allMatchingSelected
+          ? {
+              allMatching: true,
+              ...(ratingFilter !== "all" ? { rating: ratingFilter } : {}),
+            }
+          : { ids: selectedIds },
+      });
       setSelectedIds([]);
+      setAllMatchingSelected(false);
+      await loadReviews();
     } catch (err: unknown) {
       setError(
         axios.isAxiosError(err)
@@ -162,6 +202,46 @@ export default function AdminReviewsPage() {
           </div>
         )}
 
+        <div className="mb-5 rounded-md border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Filter by rating
+              </p>
+              <p className="mt-1 text-sm font-bold text-brandBlack">
+                Showing {total} review{total === 1 ? "" : "s"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => changeRatingFilter("all")}
+                className={`rounded-md border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  ratingFilter === "all"
+                    ? "border-brandRed bg-brandRed text-white"
+                    : "border-zinc-200 text-brandBlack hover:border-brandRed hover:text-brandRed"
+                }`}
+              >
+                All
+              </button>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <button
+                  key={rating}
+                  type="button"
+                  onClick={() => changeRatingFilter(rating)}
+                  className={`rounded-md border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    ratingFilter === rating
+                      ? "border-brandRed bg-brandRed text-white"
+                      : "border-zinc-200 text-brandBlack hover:border-brandRed hover:text-brandRed"
+                  }`}
+                >
+                  {rating} ★
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {loading && (
           <div className="rounded-md border border-zinc-200 bg-white p-14 text-center">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -180,22 +260,37 @@ export default function AdminReviewsPage() {
 
         {!loading && reviews.length > 0 && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 shadow-sm">
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brandBlack transition-all hover:border-brandRed hover:text-brandRed"
-            >
-              {allSelected ? <FiCheckSquare size={14} /> : <FiSquare size={14} />}
-              Select all
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brandBlack transition-all hover:border-brandRed hover:text-brandRed"
+              >
+                {allSelected ? <FiCheckSquare size={14} /> : <FiSquare size={14} />}
+              Select page
             </button>
+            {allSelected && hasMoreMatchingReviews ? (
+              <button
+                type="button"
+                onClick={selectAllMatching}
+                className="inline-flex items-center gap-2 rounded-md border border-brandRed px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brandRed transition-all hover:bg-brandRed hover:text-white"
+              >
+                <FiCheckSquare size={14} />
+                Select all {total} matching
+              </button>
+            ) : null}
+            {allMatchingSelected ? (
+              <p className="mr-auto text-[10px] font-black uppercase tracking-widest text-brandRed">
+                All {total} matching reviews selected
+              </p>
+            ) : null}
             <button
               type="button"
-              disabled={!selectedIds.length || deleting}
+              disabled={!selectedCount || deleting}
               onClick={deleteSelected}
               className="inline-flex items-center gap-2 rounded-md bg-brandRed px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandBlack disabled:cursor-not-allowed disabled:opacity-40"
             >
               <FiTrash2 size={14} />
-              Delete selected ({selectedIds.length})
+              Delete selected ({selectedCount})
             </button>
           </div>
         )}
@@ -213,7 +308,7 @@ export default function AdminReviewsPage() {
                     onClick={() => toggleSelected(review.id)}
                     className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 transition-colors hover:text-brandRed"
                   >
-                    {selectedIds.includes(review.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                    {allMatchingSelected || selectedIds.includes(review.id) ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
                     Select
                   </button>
                   <button
