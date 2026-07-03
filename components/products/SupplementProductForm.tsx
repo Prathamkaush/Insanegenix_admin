@@ -44,6 +44,8 @@ type NutritionFact = {
   amount: string;
   unit: string;
   per: string;
+  amountPer100g: string;
+  rdaPercentage: string;
 };
 
 const emptyVariant = (): Variant => ({
@@ -74,8 +76,43 @@ const emptyNutrition = (): NutritionFact => ({
   name: "",
   amount: "",
   unit: "",
-  per: "serving",
+  per: "",
+  amountPer100g: "",
+  rdaPercentage: "",
 });
+
+const NUTRITION_META_PREFIX = "nutrition-label:";
+
+function parseNutritionMeta(per?: string | null) {
+  if (!per?.startsWith(NUTRITION_META_PREFIX)) {
+    return {
+      per: per || "",
+      amountPer100g: "",
+      rdaPercentage: "",
+    };
+  }
+
+  const params = new URLSearchParams(per.slice(NUTRITION_META_PREFIX.length));
+
+  return {
+    per: params.get("serving") || "",
+    amountPer100g: params.get("per100g") || "",
+    rdaPercentage: params.get("rda") || "",
+  };
+}
+
+function buildNutritionMeta(fact: NutritionFact, servingSize: string) {
+  if (!fact.amountPer100g && !fact.rdaPercentage && !fact.per) {
+    return servingSize || "serving";
+  }
+
+  const params = new URLSearchParams();
+  params.set("serving", fact.per || servingSize || "serving");
+  if (fact.amountPer100g) params.set("per100g", fact.amountPer100g);
+  if (fact.rdaPercentage) params.set("rda", fact.rdaPercentage);
+
+  return `${NUTRITION_META_PREFIX}${params.toString()}`;
+}
 
 const imageUrl = (fileName?: string | null) =>
   fileName
@@ -346,12 +383,18 @@ export default function SupplementProductForm({
       initialProduct.nutritionFacts.length
     ) {
       setNutritionFacts(
-        initialProduct.nutritionFacts.map((n: any) => ({
-          name: n.name || "",
-          amount: n.amount ? String(n.amount) : "",
-          unit: n.unit || "",
-          per: n.per || "serving",
-        })),
+        initialProduct.nutritionFacts.map((n: any) => {
+          const meta = parseNutritionMeta(n.per);
+
+          return {
+            name: n.name || "",
+            amount: n.amount ? String(n.amount) : "",
+            unit: n.unit || "",
+            per: meta.per,
+            amountPer100g: meta.amountPer100g,
+            rdaPercentage: meta.rdaPercentage,
+          };
+        }),
       );
     }
 
@@ -522,16 +565,33 @@ export default function SupplementProductForm({
     fd.append("weight", defaultVariant?.weightKg || "0.5");
     fd.append("stock", String(totalStock));
     fd.append("variants", JSON.stringify(cleanVariants));
+    const factAmount = (names: string[], fallback: string) =>
+      nutritionFacts.find((fact) =>
+        names.some((name) =>
+          fact.name.toLowerCase().includes(name.toLowerCase()),
+        ),
+      )?.amount || fallback;
+
     fd.append(
       "nutritionFacts",
-      JSON.stringify(nutritionFacts.filter((fact) => fact.name && fact.amount)),
+      JSON.stringify(
+        nutritionFacts
+          .filter((fact) => fact.name && fact.amount)
+          .map((fact, index) => ({
+            name: fact.name,
+            amount: fact.amount,
+            unit: fact.unit,
+            per: buildNutritionMeta(fact, servingSize),
+            position: index,
+          })),
+      ),
     );
     fd.append("servingSize", servingSize);
     fd.append("servingsPerContainer", servingsPerContainer);
-    fd.append("proteinPerServing", proteinPerServing);
-    fd.append("bcaaPerServing", bcaaPerServing);
-    fd.append("eaaPerServing", eaaPerServing);
-    fd.append("caloriesPerServing", caloriesPerServing);
+    fd.append("proteinPerServing", factAmount(["protein"], proteinPerServing));
+    fd.append("bcaaPerServing", factAmount(["bcaa"], bcaaPerServing));
+    fd.append("eaaPerServing", factAmount(["eaa"], eaaPerServing));
+    fd.append("caloriesPerServing", factAmount(["energy", "calorie"], caloriesPerServing));
     fd.append("proteinPercentage", proteinPercentage);
     fd.append("ingredients", ingredients);
     fd.append("howToUse", howToUse);
@@ -640,7 +700,7 @@ export default function SupplementProductForm({
             </div>
           </Section>
 
-          <Section title="Supplement Details">
+          <Section title="Catalog Metadata">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field
                 label="Goal"
@@ -673,54 +733,116 @@ export default function SupplementProductForm({
                 placeholder="Energy, recovery, performance"
                 className="md:col-span-2"
               />
-              <Field
-                label="Protein type"
-                value={proteinType}
-                onChange={setProteinType}
-                placeholder="Whey isolate"
-              />
-              <Field
-                label="Serving size"
-                value={servingSize}
-                onChange={setServingSize}
-                placeholder="33 g"
-              />
-              <Field
-                label="Servings / container"
-                type="number"
-                value={servingsPerContainer}
-                onChange={setServingsPerContainer}
-              />
-              <Field
-                label="Protein / serving (g)"
-                type="number"
-                value={proteinPerServing}
-                onChange={setProteinPerServing}
-              />
-              <Field
-                label="BCAA / serving (g)"
-                type="number"
-                value={bcaaPerServing}
-                onChange={setBcaaPerServing}
-              />
-              <Field
-                label="EAA / serving (g)"
-                type="number"
-                value={eaaPerServing}
-                onChange={setEaaPerServing}
-              />
-              <Field
-                label="Calories / serving"
-                type="number"
-                value={caloriesPerServing}
-                onChange={setCaloriesPerServing}
-              />
-              <Field
-                label="Protein %"
-                type="number"
-                value={proteinPercentage}
-                onChange={setProteinPercentage}
-              />
+            </div>
+          </Section>
+
+          <Section title="Nutrition Facts">
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field
+                  label="Serving size"
+                  value={servingSize}
+                  onChange={setServingSize}
+                  placeholder="1 scoop (33 g)"
+                />
+                <Field
+                  label="Servings / container"
+                  type="number"
+                  value={servingsPerContainer}
+                  onChange={setServingsPerContainer}
+                  placeholder="30"
+                />
+                <Field
+                  label="Protein type"
+                  value={proteinType}
+                  onChange={setProteinType}
+                  placeholder="Whey isolate"
+                />
+              </div>
+
+              <div className="overflow-hidden rounded-md border border-white/10">
+                <div className="grid grid-cols-12 gap-3 bg-white/5 px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  <span className="col-span-12 md:col-span-3">Nutrient</span>
+                  <span className="col-span-6 md:col-span-2">Amt per 100g</span>
+                  <span className="col-span-6 md:col-span-2">Amt per serving</span>
+                  <span className="col-span-6 md:col-span-2">Unit</span>
+                  <span className="col-span-6 md:col-span-2">%RDA / serving</span>
+                  <span className="hidden md:block md:col-span-1" />
+                </div>
+
+                <div className="divide-y divide-white/10">
+                  {nutritionFacts.map((fact, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-12 gap-3 px-3 py-3"
+                    >
+                      <Field
+                        label="Nutrient"
+                        value={fact.name}
+                        onChange={(v) => updateNutrition(index, { name: v })}
+                        placeholder="Protein"
+                        className="col-span-12 md:col-span-3"
+                      />
+                      <Field
+                        label="Amt per 100g"
+                        type="number"
+                        value={fact.amountPer100g}
+                        onChange={(v) =>
+                          updateNutrition(index, { amountPer100g: v })
+                        }
+                        placeholder="90"
+                        className="col-span-6 md:col-span-2"
+                      />
+                      <Field
+                        label="Amt per serving"
+                        type="number"
+                        value={fact.amount}
+                        onChange={(v) => updateNutrition(index, { amount: v })}
+                        placeholder="29.7"
+                        className="col-span-6 md:col-span-2"
+                      />
+                      <Field
+                        label="Unit"
+                        value={fact.unit}
+                        onChange={(v) => updateNutrition(index, { unit: v })}
+                        placeholder="g"
+                        className="col-span-6 md:col-span-2"
+                      />
+                      <Field
+                        label="%RDA / serving"
+                        type="number"
+                        value={fact.rdaPercentage}
+                        onChange={(v) =>
+                          updateNutrition(index, { rdaPercentage: v })
+                        }
+                        placeholder="55"
+                        className="col-span-6 md:col-span-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNutritionFacts((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
+                        }
+                        className="col-span-12 self-end rounded-md border border-white/10 bg-white/5 px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:bg-white/10 hover:text-red-500 md:col-span-1"
+                      >
+                        <Trash2 size={14} className="mx-auto" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setNutritionFacts((prev) => [...prev, emptyNutrition()])
+                }
+                className="admin-chip"
+              >
+                + Add Nutrient
+              </button>
             </div>
           </Section>
 
@@ -924,59 +1046,6 @@ export default function SupplementProductForm({
                 className="inline-flex items-center gap-2 rounded-md bg-brandBlack px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white hover:bg-brandRed"
               >
                 <Plus size={16} /> Add Variant
-              </button>
-            </div>
-          </Section>
-
-          <Section title="Nutrition Facts">
-            <div className="space-y-3">
-              {nutritionFacts.map((fact, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-2 md:grid-cols-5 gap-3"
-                >
-                  <Field
-                    label="Name"
-                    value={fact.name}
-                    onChange={(v) => updateNutrition(index, { name: v })}
-                  />
-                  <Field
-                    label="Amount"
-                    type="number"
-                    value={fact.amount}
-                    onChange={(v) => updateNutrition(index, { amount: v })}
-                  />
-                  <Field
-                    label="Unit"
-                    value={fact.unit}
-                    onChange={(v) => updateNutrition(index, { unit: v })}
-                  />
-                  <Field
-                    label="Per"
-                    value={fact.per}
-                    onChange={(v) => updateNutrition(index, { per: v })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setNutritionFacts((prev) =>
-                        prev.filter((_, i) => i !== index),
-                      )
-                    }
-                    className="mt-5 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-red-500 hover:bg-white/10"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  setNutritionFacts((prev) => [...prev, emptyNutrition()])
-                }
-                className="admin-chip"
-              >
-                + Add Fact
               </button>
             </div>
           </Section>
