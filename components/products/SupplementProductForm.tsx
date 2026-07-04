@@ -106,7 +106,10 @@ function withCommonNutritionRows(current: NutritionFact[]) {
     (fact) => !existingNames.has(fact.name.toLowerCase()),
   );
 
-  return [...current.filter((fact) => fact.name || fact.amount), ...missingRows];
+  return [
+    ...current.filter((fact) => fact.name || fact.amount),
+    ...missingRows.map((fact) => ({ ...fact })),
+  ];
 }
 
 const MAX_UPLOAD_IMAGE_SIZE = 1600;
@@ -269,8 +272,7 @@ export default function SupplementProductForm({
   const [variants, setVariants] = useState<Variant[]>([
     { ...emptyVariant(), isDefault: true },
   ]);
-  const [nutritionFacts, setNutritionFacts] =
-    useState<NutritionFact[]>(commonNutritionRows);
+  const [nutritionFacts, setNutritionFacts] = useState<NutritionFact[]>([]);
   const [images, setImages] = useState<(File | null)[]>([
     null,
     null,
@@ -497,6 +499,14 @@ export default function SupplementProductForm({
     setNutritionFacts((prev) =>
       prev.map((item, i) => (i === index ? { ...item, ...patch } : item)),
     );
+  };
+
+  const loadCommonNutritionRows = () => {
+    setNutritionFacts((prev) => withCommonNutritionRows(prev));
+  };
+
+  const addCustomNutritionRow = () => {
+    setNutritionFacts((prev) => [emptyNutrition(), ...prev]);
   };
 
   const handleImageChange = (index: number, file: File | null) => {
@@ -860,18 +870,14 @@ export default function SupplementProductForm({
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    setNutritionFacts((prev) => withCommonNutritionRows(prev))
-                  }
+                  onClick={loadCommonNutritionRows}
                   className="admin-chip"
                 >
                   Load Common Nutrients
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setNutritionFacts((prev) => [...prev, emptyNutrition()])
-                  }
+                  onClick={addCustomNutritionRow}
                   className="admin-chip"
                 >
                   + Add Custom Row
