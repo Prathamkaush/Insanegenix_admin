@@ -81,6 +81,82 @@ const emptyNutrition = (): NutritionFact => ({
   rdaPercentage: "",
 });
 
+const commonNutritionRows: NutritionFact[] = [
+  { ...emptyNutrition(), name: "Energy", unit: "kcal" },
+  { ...emptyNutrition(), name: "Protein", unit: "g" },
+  { ...emptyNutrition(), name: "Total Carbohydrate", unit: "g" },
+  { ...emptyNutrition(), name: "Sugars", unit: "g" },
+  { ...emptyNutrition(), name: "Total Fat", unit: "g" },
+  { ...emptyNutrition(), name: "Saturated Fat", unit: "g" },
+  { ...emptyNutrition(), name: "Sodium", unit: "mg" },
+  { ...emptyNutrition(), name: "Calcium", unit: "mg" },
+  { ...emptyNutrition(), name: "Potassium", unit: "mg" },
+  { ...emptyNutrition(), name: "Magnesium", unit: "mg" },
+  { ...emptyNutrition(), name: "Iron", unit: "mg" },
+  { ...emptyNutrition(), name: "Phosphorus", unit: "mg" },
+];
+
+function withCommonNutritionRows(current: NutritionFact[]) {
+  const existingNames = new Set(
+    current
+      .map((fact) => fact.name.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const missingRows = commonNutritionRows.filter(
+    (fact) => !existingNames.has(fact.name.toLowerCase()),
+  );
+
+  return [...current.filter((fact) => fact.name || fact.amount), ...missingRows];
+}
+
+const MAX_UPLOAD_IMAGE_SIZE = 1600;
+const UPLOAD_IMAGE_QUALITY = 0.82;
+const MIN_IMAGE_COMPRESS_SIZE = 450 * 1024;
+
+async function compressImageForUpload(file: File) {
+  if (
+    !file.type.startsWith("image/") ||
+    file.type === "image/gif" ||
+    file.type === "image/svg+xml" ||
+    file.size < MIN_IMAGE_COMPRESS_SIZE
+  ) {
+    return file;
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(
+      1,
+      MAX_UPLOAD_IMAGE_SIZE / Math.max(bitmap.width, bitmap.height),
+    );
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", UPLOAD_IMAGE_QUALITY);
+    });
+
+    if (!blob || blob.size >= file.size) return file;
+
+    const name = file.name.replace(/\.[^.]+$/, ".jpg");
+    return new File([blob], name, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  }
+}
+
 const NUTRITION_META_PREFIX = "nutrition-label:";
 
 function parseNutritionMeta(per?: string | null) {
@@ -132,6 +208,7 @@ export default function SupplementProductForm({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
 
   const [categories, setCategories] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
@@ -192,9 +269,8 @@ export default function SupplementProductForm({
   const [variants, setVariants] = useState<Variant[]>([
     { ...emptyVariant(), isDefault: true },
   ]);
-  const [nutritionFacts, setNutritionFacts] = useState<NutritionFact[]>([
-    emptyNutrition(),
-  ]);
+  const [nutritionFacts, setNutritionFacts] =
+    useState<NutritionFact[]>(commonNutritionRows);
   const [images, setImages] = useState<(File | null)[]>([
     null,
     null,
@@ -612,17 +688,36 @@ export default function SupplementProductForm({
     fd.append("freeShipping", String(freeShipping));
     appendArrayLines(fd, "keyBenefits", keyBenefitsText);
     appendArrayLines(fd, "certifications", certificationsText);
-    images.forEach((img, i) => img && fd.append(`image${i + 1}`, img));
-    if (video) fd.append("video", video);
-    sellableVariants.forEach(({ variant }, cleanIndex) => {
-      variant.imageFiles.forEach((file, imageIndex) => {
-        if (file) fd.append(`variant_${cleanIndex}_image${imageIndex + 1}`, file);
-      });
-      if (variant.videoFile) fd.append(`variant_${cleanIndex}_video`, variant.videoFile);
-    });
-
     try {
       setSaving(true);
+      setSaveStatus("Optimizing images");
+
+      const optimizedImages = await Promise.all(
+        images.map((img) => (img ? compressImageForUpload(img) : null)),
+      );
+      const optimizedVariantImages = await Promise.all(
+        sellableVariants.map(async ({ variant }) => ({
+          variant,
+          imageFiles: await Promise.all(
+            variant.imageFiles.map((file) =>
+              file ? compressImageForUpload(file) : null,
+            ),
+          ),
+        })),
+      );
+
+      optimizedImages.forEach((img, i) => {
+        if (img) fd.append(`image${i + 1}`, img);
+      });
+      if (video) fd.append("video", video);
+      optimizedVariantImages.forEach(({ variant, imageFiles }, cleanIndex) => {
+        imageFiles.forEach((file, imageIndex) => {
+          if (file) fd.append(`variant_${cleanIndex}_image${imageIndex + 1}`, file);
+        });
+        if (variant.videoFile) fd.append(`variant_${cleanIndex}_video`, variant.videoFile);
+      });
+
+      setSaveStatus("Uploading product");
       if (mode === "edit" && productId)
         await api.patch(`/products/${productId}`, fd);
       else await api.post("/products", fd);
@@ -632,6 +727,7 @@ export default function SupplementProductForm({
       alert(err.response?.data?.message || "Unable to save product");
     } finally {
       setSaving(false);
+      setSaveStatus("");
     }
   };
 
@@ -642,6 +738,7 @@ export default function SupplementProductForm({
       onBack={() => router.push("/products")}
       onSave={submit}
       saving={saving}
+      savingLabel={saveStatus}
     >
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         <div className="xl:col-span-8 space-y-6">
@@ -760,89 +857,115 @@ export default function SupplementProductForm({
                 />
               </div>
 
-              <div className="overflow-hidden rounded-md border border-white/10">
-                <div className="grid grid-cols-12 gap-3 bg-white/5 px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  <span className="col-span-12 md:col-span-3">Nutrient</span>
-                  <span className="col-span-6 md:col-span-2">Amt per 100g</span>
-                  <span className="col-span-6 md:col-span-2">Amt per serving</span>
-                  <span className="col-span-6 md:col-span-2">Unit</span>
-                  <span className="col-span-6 md:col-span-2">%RDA / serving</span>
-                  <span className="hidden md:block md:col-span-1" />
-                </div>
-
-                <div className="divide-y divide-white/10">
-                  {nutritionFacts.map((fact, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-12 gap-3 px-3 py-3"
-                    >
-                      <Field
-                        label="Nutrient"
-                        value={fact.name}
-                        onChange={(v) => updateNutrition(index, { name: v })}
-                        placeholder="Protein"
-                        className="col-span-12 md:col-span-3"
-                      />
-                      <Field
-                        label="Amt per 100g"
-                        type="number"
-                        value={fact.amountPer100g}
-                        onChange={(v) =>
-                          updateNutrition(index, { amountPer100g: v })
-                        }
-                        placeholder="90"
-                        className="col-span-6 md:col-span-2"
-                      />
-                      <Field
-                        label="Amt per serving"
-                        type="number"
-                        value={fact.amount}
-                        onChange={(v) => updateNutrition(index, { amount: v })}
-                        placeholder="29.7"
-                        className="col-span-6 md:col-span-2"
-                      />
-                      <Field
-                        label="Unit"
-                        value={fact.unit}
-                        onChange={(v) => updateNutrition(index, { unit: v })}
-                        placeholder="g"
-                        className="col-span-6 md:col-span-2"
-                      />
-                      <Field
-                        label="%RDA / serving"
-                        type="number"
-                        value={fact.rdaPercentage}
-                        onChange={(v) =>
-                          updateNutrition(index, { rdaPercentage: v })
-                        }
-                        placeholder="55"
-                        className="col-span-6 md:col-span-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNutritionFacts((prev) =>
-                            prev.filter((_, i) => i !== index),
-                          )
-                        }
-                        className="col-span-12 self-end rounded-md border border-white/10 bg-white/5 px-3 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:bg-white/10 hover:text-red-500 md:col-span-1"
-                      >
-                        <Trash2 size={14} className="mx-auto" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNutritionFacts((prev) => withCommonNutritionRows(prev))
+                  }
+                  className="admin-chip"
+                >
+                  Load Common Nutrients
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setNutritionFacts((prev) => [...prev, emptyNutrition()])
+                  }
+                  className="admin-chip"
+                >
+                  + Add Custom Row
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setNutritionFacts((prev) => [...prev, emptyNutrition()])
-                }
-                className="admin-chip"
-              >
-                + Add Nutrient
-              </button>
+              <div className="overflow-x-auto rounded-md border border-white/10">
+                <table className="min-w-[860px] w-full border-collapse">
+                  <thead className="bg-white/5">
+                    <tr>
+                      <th className="w-[26%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        Nutrient
+                      </th>
+                      <th className="w-[18%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        Amt per 100g
+                      </th>
+                      <th className="w-[18%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        Amt per serving
+                      </th>
+                      <th className="w-[14%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        Unit
+                      </th>
+                      <th className="w-[18%] px-3 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        %RDA / serving
+                      </th>
+                      <th className="w-[6%] px-3 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {nutritionFacts.map((fact, index) => (
+                      <tr key={index} className="bg-black/10">
+                        <td className="p-2">
+                          <TableInput
+                            value={fact.name}
+                            onChange={(v) => updateNutrition(index, { name: v })}
+                            placeholder="Protein"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <TableInput
+                            type="number"
+                            value={fact.amountPer100g}
+                            onChange={(v) =>
+                              updateNutrition(index, { amountPer100g: v })
+                            }
+                            placeholder="90"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <TableInput
+                            type="number"
+                            value={fact.amount}
+                            onChange={(v) =>
+                              updateNutrition(index, { amount: v })
+                            }
+                            placeholder="29.7"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <TableInput
+                            value={fact.unit}
+                            onChange={(v) => updateNutrition(index, { unit: v })}
+                            placeholder="g"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <TableInput
+                            type="number"
+                            value={fact.rdaPercentage}
+                            onChange={(v) =>
+                              updateNutrition(index, { rdaPercentage: v })
+                            }
+                            placeholder="55"
+                          />
+                        </td>
+                        <td className="p-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNutritionFacts((prev) =>
+                                prev.filter((_, i) => i !== index),
+                              )
+                            }
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-red-500"
+                            aria-label={`Remove ${fact.name || "nutrient"} row`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </Section>
 
@@ -1324,6 +1447,7 @@ function AdminLayoutShell({
   onBack,
   onSave,
   saving,
+  savingLabel,
   children,
 }: {
   title: string;
@@ -1331,6 +1455,7 @@ function AdminLayoutShell({
   onBack: () => void;
   onSave: () => void;
   saving: boolean;
+  savingLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1361,7 +1486,7 @@ function AdminLayoutShell({
           disabled={saving}
           className="inline-flex items-center justify-center gap-2 rounded-md bg-brandRed px-5 py-3 text-[11px] font-black uppercase tracking-widest text-white hover:bg-white hover:text-brandBlack disabled:opacity-60"
         >
-          <Save size={16} /> {saving ? "Saving" : "Save Product"}
+          <Save size={16} /> {saving ? savingLabel || "Saving" : "Save Product"}
         </button>
       </div>
       {children}
@@ -1412,6 +1537,28 @@ function Field({
         className="admin-field"
       />
     </div>
+  );
+}
+
+function TableInput({
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-md border border-white/10 bg-white/5 px-2.5 py-2 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-brandRed focus:ring-2 focus:ring-brandRed/20"
+    />
   );
 }
 
