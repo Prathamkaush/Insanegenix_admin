@@ -199,6 +199,12 @@ const imageUrl = (fileName?: string | null) =>
     : "";
 
 const mediaUrl = imageUrl;
+const DEFAULT_CATEGORY_LABEL = "Protien";
+const DEFAULT_CATEGORY_NAMES = ["protien", "protein"];
+
+function normalizeCategoryName(name?: string | null) {
+  return (name || "").trim().toLowerCase();
+}
 
 export default function SupplementProductForm({
   mode,
@@ -291,6 +297,13 @@ export default function SupplementProductForm({
   ]);
   const [video, setVideo] = useState<File | null>(null);
   const [existingVideo, setExistingVideo] = useState<string | null>(null);
+  const defaultCategory = useMemo(
+    () =>
+      categories.find((category) =>
+        DEFAULT_CATEGORY_NAMES.includes(normalizeCategoryName(category.name)),
+      ),
+    [categories],
+  );
 
   useEffect(() => {
     api
@@ -298,6 +311,17 @@ export default function SupplementProductForm({
       .then((r) => setCategories(r.data || []))
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!defaultCategory) return;
+
+    const nextCategoryId = String(defaultCategory.id);
+    if (categoryId === nextCategoryId) return;
+
+    setCategoryId(nextCategoryId);
+    setTypeId("");
+    setSubtypeId("");
+  }, [categoryId, defaultCategory]);
 
   useEffect(() => {
     if (!categoryId) {
@@ -574,8 +598,13 @@ export default function SupplementProductForm({
   };
 
   const submit = async () => {
-    if (!title || !categoryId) {
-      alert("Product name and category are required");
+    if (!title) {
+      alert("Product name is required");
+      return;
+    }
+
+    if (!categoryId) {
+      alert(`Default category "${DEFAULT_CATEGORY_LABEL}" was not found`);
       return;
     }
 
@@ -1228,20 +1257,12 @@ export default function SupplementProductForm({
         <aside className="xl:col-span-4 space-y-6">
           <Section title="Catalog Path">
             <div className="space-y-4">
-              <SelectField
-                label="Category"
-                value={categoryId}
-                onChange={(v) => {
-                  setCategoryId(v);
-                  setTypeId("");
-                  setSubtypeId("");
-                }}
-                options={categories.map((c) => ({
-                  value: String(c.id),
-                  label: c.name,
-                }))}
-                placeholder="Select category"
-              />
+              <div className="rounded-md border border-white/10 bg-white/5 px-4 py-3">
+                <p className="admin-label mb-1">Category</p>
+                <p className="text-sm font-black text-white">
+                  {defaultCategory?.name || DEFAULT_CATEGORY_LABEL}
+                </p>
+              </div>
               <SelectField
                 label="Type (optional)"
                 value={typeId}
