@@ -161,6 +161,13 @@ async function compressImageForUpload(file: File) {
 }
 
 const NUTRITION_META_PREFIX = "nutrition-label:";
+const DEFAULT_NUTRITION_LABELS = {
+  servingSizeTitle: "Serving Size",
+  servingsTitle: "Servings Per Container",
+  servingColumnTitle: "Amount Per Serving",
+  comparisonColumnTitle: "Per 100g",
+  rdaColumnTitle: "*RDA%",
+};
 
 function hasNutritionValue(fact: NutritionFact) {
   return Boolean(
@@ -176,6 +183,7 @@ function parseNutritionMeta(per?: string | null) {
       per: per || "",
       amountPer100g: "",
       rdaPercentage: "",
+      labels: DEFAULT_NUTRITION_LABELS,
     };
   }
 
@@ -185,11 +193,38 @@ function parseNutritionMeta(per?: string | null) {
     per: params.get("serving") || "",
     amountPer100g: params.get("per100g") || "",
     rdaPercentage: params.get("rda") || "",
+    labels: {
+      servingSizeTitle:
+        params.get("servingSizeTitle") ||
+        DEFAULT_NUTRITION_LABELS.servingSizeTitle,
+      servingsTitle:
+        params.get("servingsTitle") || DEFAULT_NUTRITION_LABELS.servingsTitle,
+      servingColumnTitle:
+        params.get("servingColumnTitle") ||
+        DEFAULT_NUTRITION_LABELS.servingColumnTitle,
+      comparisonColumnTitle:
+        params.get("comparisonColumnTitle") ||
+        DEFAULT_NUTRITION_LABELS.comparisonColumnTitle,
+      rdaColumnTitle:
+        params.get("rdaColumnTitle") || DEFAULT_NUTRITION_LABELS.rdaColumnTitle,
+    },
   };
 }
 
-function buildNutritionMeta(fact: NutritionFact, servingSize: string) {
-  if (!fact.amountPer100g && !fact.rdaPercentage && !fact.per) {
+function buildNutritionMeta(
+  fact: NutritionFact,
+  servingSize: string,
+  labels: typeof DEFAULT_NUTRITION_LABELS,
+) {
+  const hasCustomLabels =
+    labels.servingSizeTitle !== DEFAULT_NUTRITION_LABELS.servingSizeTitle ||
+    labels.servingsTitle !== DEFAULT_NUTRITION_LABELS.servingsTitle ||
+    labels.servingColumnTitle !== DEFAULT_NUTRITION_LABELS.servingColumnTitle ||
+    labels.comparisonColumnTitle !==
+      DEFAULT_NUTRITION_LABELS.comparisonColumnTitle ||
+    labels.rdaColumnTitle !== DEFAULT_NUTRITION_LABELS.rdaColumnTitle;
+
+  if (!fact.amountPer100g && !fact.rdaPercentage && !fact.per && !hasCustomLabels) {
     return servingSize || "serving";
   }
 
@@ -197,6 +232,11 @@ function buildNutritionMeta(fact: NutritionFact, servingSize: string) {
   params.set("serving", fact.per || servingSize || "serving");
   if (fact.amountPer100g) params.set("per100g", fact.amountPer100g);
   if (fact.rdaPercentage) params.set("rda", fact.rdaPercentage);
+  params.set("servingSizeTitle", labels.servingSizeTitle);
+  params.set("servingsTitle", labels.servingsTitle);
+  params.set("servingColumnTitle", labels.servingColumnTitle);
+  params.set("comparisonColumnTitle", labels.comparisonColumnTitle);
+  params.set("rdaColumnTitle", labels.rdaColumnTitle);
 
   return `${NUTRITION_META_PREFIX}${params.toString()}`;
 }
@@ -252,6 +292,19 @@ export default function SupplementProductForm({
 
   const [servingSize, setServingSize] = useState("");
   const [servingsPerContainer, setServingsPerContainer] = useState("");
+  const [nutritionServingSizeTitle, setNutritionServingSizeTitle] = useState(
+    DEFAULT_NUTRITION_LABELS.servingSizeTitle,
+  );
+  const [nutritionServingsTitle, setNutritionServingsTitle] = useState(
+    DEFAULT_NUTRITION_LABELS.servingsTitle,
+  );
+  const [nutritionServingColumnTitle, setNutritionServingColumnTitle] =
+    useState(DEFAULT_NUTRITION_LABELS.servingColumnTitle);
+  const [nutritionComparisonColumnTitle, setNutritionComparisonColumnTitle] =
+    useState(DEFAULT_NUTRITION_LABELS.comparisonColumnTitle);
+  const [nutritionRdaColumnTitle, setNutritionRdaColumnTitle] = useState(
+    DEFAULT_NUTRITION_LABELS.rdaColumnTitle,
+  );
   const [proteinPerServing, setProteinPerServing] = useState("");
   const [bcaaPerServing, setBcaaPerServing] = useState("");
   const [eaaPerServing, setEaaPerServing] = useState("");
@@ -492,6 +545,13 @@ export default function SupplementProductForm({
       Array.isArray(initialProduct.nutritionFacts) &&
       initialProduct.nutritionFacts.length
     ) {
+      const firstMeta = parseNutritionMeta(initialProduct.nutritionFacts[0]?.per);
+      setNutritionServingSizeTitle(firstMeta.labels.servingSizeTitle);
+      setNutritionServingsTitle(firstMeta.labels.servingsTitle);
+      setNutritionServingColumnTitle(firstMeta.labels.servingColumnTitle);
+      setNutritionComparisonColumnTitle(firstMeta.labels.comparisonColumnTitle);
+      setNutritionRdaColumnTitle(firstMeta.labels.rdaColumnTitle);
+
       setNutritionFacts(
         initialProduct.nutritionFacts.map((n: any) => {
           const meta = parseNutritionMeta(n.per);
@@ -704,7 +764,23 @@ export default function SupplementProductForm({
             name: fact.name.trim(),
             amount: fact.amount,
             unit: fact.unit,
-            per: buildNutritionMeta(fact, servingSize),
+            per: buildNutritionMeta(fact, servingSize, {
+              servingSizeTitle:
+                nutritionServingSizeTitle.trim() ||
+                DEFAULT_NUTRITION_LABELS.servingSizeTitle,
+              servingsTitle:
+                nutritionServingsTitle.trim() ||
+                DEFAULT_NUTRITION_LABELS.servingsTitle,
+              servingColumnTitle:
+                nutritionServingColumnTitle.trim() ||
+                DEFAULT_NUTRITION_LABELS.servingColumnTitle,
+              comparisonColumnTitle:
+                nutritionComparisonColumnTitle.trim() ||
+                DEFAULT_NUTRITION_LABELS.comparisonColumnTitle,
+              rdaColumnTitle:
+                nutritionRdaColumnTitle.trim() ||
+                DEFAULT_NUTRITION_LABELS.rdaColumnTitle,
+            }),
             position: index,
           })),
       ),
@@ -901,6 +977,38 @@ export default function SupplementProductForm({
                   value={proteinType}
                   onChange={setProteinType}
                   placeholder="Whey isolate"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <Field
+                  label="Serving title"
+                  value={nutritionServingSizeTitle}
+                  onChange={setNutritionServingSizeTitle}
+                  placeholder="Serving Size"
+                />
+                <Field
+                  label="Servings title"
+                  value={nutritionServingsTitle}
+                  onChange={setNutritionServingsTitle}
+                  placeholder="Servings Per Container"
+                />
+                <Field
+                  label="Serving column"
+                  value={nutritionServingColumnTitle}
+                  onChange={setNutritionServingColumnTitle}
+                  placeholder="Amount Per Serving"
+                />
+                <Field
+                  label="Comparison column"
+                  value={nutritionComparisonColumnTitle}
+                  onChange={setNutritionComparisonColumnTitle}
+                  placeholder="Per 100g"
+                />
+                <Field
+                  label="RDA column"
+                  value={nutritionRdaColumnTitle}
+                  onChange={setNutritionRdaColumnTitle}
+                  placeholder="*RDA%"
                 />
               </div>
 
