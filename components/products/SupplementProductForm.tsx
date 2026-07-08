@@ -162,6 +162,14 @@ async function compressImageForUpload(file: File) {
 
 const NUTRITION_META_PREFIX = "nutrition-label:";
 
+function hasNutritionValue(fact: NutritionFact) {
+  return Boolean(
+    fact.amount.trim() ||
+      fact.amountPer100g.trim() ||
+      fact.rdaPercentage.trim(),
+  );
+}
+
 function parseNutritionMeta(per?: string | null) {
   if (!per?.startsWith(NUTRITION_META_PREFIX)) {
     return {
@@ -691,9 +699,9 @@ export default function SupplementProductForm({
       "nutritionFacts",
       JSON.stringify(
         nutritionFacts
-          .filter((fact) => fact.name && fact.amount)
+          .filter((fact) => fact.name.trim() && hasNutritionValue(fact))
           .map((fact, index) => ({
-            name: fact.name,
+            name: fact.name.trim(),
             amount: fact.amount,
             unit: fact.unit,
             per: buildNutritionMeta(fact, servingSize),
