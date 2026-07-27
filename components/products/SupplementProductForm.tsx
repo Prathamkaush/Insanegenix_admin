@@ -335,7 +335,7 @@ export default function SupplementProductForm({
   const [typeId, setTypeId] = useState("");
   const [subtypeId, setSubtypeId] = useState("");
   const [status, setStatus] = useState("ACTIVE");
-  const [gstRate, setGstRate] = useState("0");
+  const [gstRate, setGstRate] = useState("5");
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [metaKeywords, setMetaKeywords] = useState("");
@@ -384,7 +384,7 @@ export default function SupplementProductForm({
   const [isFeatured, setIsFeatured] = useState(false);
   const [isBestSeller, setIsBestSeller] = useState(false);
   const [isNewLaunch, setIsNewLaunch] = useState(false);
-  const [freeShipping, setFreeShipping] = useState(false);
+  const [freeShipping, setFreeShipping] = useState(true);
 
   const [variants, setVariants] = useState<Variant[]>([
     { ...emptyVariant(), isDefault: true },
@@ -488,7 +488,7 @@ export default function SupplementProductForm({
     setGstRate(
       initialProduct.gstRate !== undefined && initialProduct.gstRate !== null
         ? String(initialProduct.gstRate)
-        : "0",
+        : "5",
     );
 
     setServingSize(initialProduct.servingSize || "");

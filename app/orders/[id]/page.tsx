@@ -6,7 +6,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { useParams } from "next/navigation";
 import TrackingTimeline from "@/components/TrackingTimeline";
 import OrderStatusTimeline from "@/components/order/OrderStatusTimeline";
-import { FiPackage, FiTruck, FiMapPin, FiCreditCard, FiClock, FiPrinter } from "react-icons/fi";
+import { FiPackage, FiTruck, FiMapPin, FiCreditCard, FiClock, FiPrinter, FiXCircle } from "react-icons/fi";
 
 /* ================= ENHANCED STATUS BADGE ================= */
 const StatusBadge = ({ status }: { status: string }) => {
@@ -61,6 +61,25 @@ export default function OrderDetailsPage() {
       await fetchOrder();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to confirm order");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const cancelOrder = async () => {
+    const confirmed = window.confirm(
+      "Cancel this order? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setActionLoading(true);
+      setError("");
+      await api.put(`/orders/${orderId}/status`, { status: "CANCELLED" });
+      await fetchOrder();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to cancel order");
     } finally {
       setActionLoading(false);
     }
@@ -172,13 +191,22 @@ export default function OrderDetailsPage() {
                     {(order.status === "PENDING" || (order.status === "CONFIRMED" && !order.trackingId)) && (
                         <div className="flex gap-4">
                             {order.status === "PENDING" && (
-                                <button
-                                    disabled={actionLoading}
-                                    onClick={confirmOrder}
-                                    className="flex-1 rounded-md bg-white/10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandRed"
-                                >
-                                    Confirm Order
-                                </button>
+                                <>
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={confirmOrder}
+                                        className="flex-1 rounded-md bg-white/10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-brandRed disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Confirm Order
+                                    </button>
+                                    <button
+                                        disabled={actionLoading}
+                                        onClick={cancelOrder}
+                                        className="flex-1 rounded-md border border-rose-800/50 bg-rose-950/20 py-4 text-[10px] font-black uppercase tracking-widest text-rose-400 transition-all hover:bg-rose-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        <FiXCircle size={14} /> Cancel Order
+                                    </button>
+                                </>
                             )}
 
                             {order.status === "CONFIRMED" && !order.trackingId && (

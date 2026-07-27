@@ -180,9 +180,6 @@ export default function AdminInvoicePage() {
     <div className="invoice-outer-wrapper">
       {/* Top action bar visible ONLY on screen, hidden during printing */}
       <div className="invoice-action-bar no-print">
-        <button className="btn-back" onClick={() => router.back()}>
-          <ArrowLeft size={16} /> Back
-        </button>
         <button className="btn-print" onClick={() => window.print()}>
           <Printer size={16} /> Print Invoice
         </button>
