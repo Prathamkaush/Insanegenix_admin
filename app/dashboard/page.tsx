@@ -16,19 +16,22 @@ export default function DashboardPage() {
   const [charts, setCharts] = useState<any>(null);
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [traffic, setTraffic] = useState<any>(null);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [statsRes, chartsRes, stockRes] = await Promise.all([
+        const [statsRes, chartsRes, stockRes, trafficRes] = await Promise.all([
           api.get("/admin/stats"),
           api.get("/admin/charts"),
           api.get("/products/admin/low-stock"),
+          api.get("/analytics/overview?days=7"),
         ]);
 
         setStats(statsRes.data);
         setCharts(chartsRes.data);
         setLowStockItems(stockRes.data || []);
+        setTraffic(trafficRes.data);
       } catch (err) {
         console.error("Dashboard load failed", err);
       } finally {
@@ -58,6 +61,10 @@ export default function DashboardPage() {
   }
 
   const cards = [
+    ...(traffic ? [
+      { label: "Visitors Today", value: traffic.summary.todayVisitors },
+      { label: "7-Day Visitors", value: traffic.summary.visitors },
+    ] : []),
     { label: "Supplements", value: stats.products },
     { label: "Orders", value: stats.totalOrders },
     { label: "Today Orders", value: stats.todayOrders },

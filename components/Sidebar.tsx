@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Dumbbell,
   FileText,
+  BarChart3,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -94,6 +95,7 @@ export default function Sidebar() {
         {/* MIDDLE: SCROLLABLE NAVIGATION */}
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
           {LinkItem("/dashboard", "Dashboard", LayoutDashboard)}
+          {LinkItem("/analytics", "Traffic Analytics", BarChart3)}
           <div className="h-px bg-white/10 my-4 mx-2" />
           {LinkItem("/categories", "Categories", Folder)}
           {LinkItem("/products", "Supplements", Dumbbell)}
