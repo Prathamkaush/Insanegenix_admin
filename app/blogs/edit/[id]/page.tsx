@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import BlogForm, { BlogFormValues } from "@/components/blogs/BlogForm";
 import { api } from "@/lib/api";
+import { blogSaveError } from "@/lib/blog-errors";
 import { ArrowLeft, FileText } from "lucide-react";
 
 function toDateTimeLocal(value?: string | null) {
@@ -58,7 +59,7 @@ export default function EditBlogPage() {
       router.push("/blogs");
     } catch (error) {
       console.error("Error updating blog:", error);
-      alert("Error updating blog");
+      alert(blogSaveError(error));
     } finally {
       setSaving(false);
     }

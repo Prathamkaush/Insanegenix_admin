@@ -163,6 +163,7 @@ export default function BlogForm({ initialValues, submitLabel, saving, onSubmit 
             <input
               className="admin-field"
               type="datetime-local"
+              style={{ colorScheme: "dark" }}
               value={values.publishedAt}
               onChange={(event) => setField("publishedAt", event.target.value)}
             />

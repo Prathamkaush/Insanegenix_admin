@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/AdminLayout";
 import BlogForm from "@/components/blogs/BlogForm";
 import { api } from "@/lib/api";
+import { blogSaveError } from "@/lib/blog-errors";
 import { ArrowLeft, FileText } from "lucide-react";
 
 export default function CreateBlogPage() {
@@ -18,7 +19,7 @@ export default function CreateBlogPage() {
       router.push("/blogs");
     } catch (error) {
       console.error("Error creating blog:", error);
-      alert("Error creating blog");
+      alert(blogSaveError(error));
     } finally {
       setSaving(false);
     }
