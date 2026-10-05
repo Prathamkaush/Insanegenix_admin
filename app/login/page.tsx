@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 
@@ -116,6 +117,9 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
+            <Link href="/forgot-password" className="block text-right text-sm text-zinc-300 hover:text-white">
+              Forgot password?
+            </Link>
             <button
               onClick={login}
               disabled={loading}
