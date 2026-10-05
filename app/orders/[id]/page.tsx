@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { normalizeOrderAddress } from "@/lib/order-address";
 import AdminLayout from "@/components/AdminLayout";
 import { useParams } from "next/navigation";
 import TrackingTimeline from "@/components/TrackingTimeline";
@@ -37,7 +38,7 @@ export default function OrderDetailsPage() {
 
   const fetchOrder = async () => {
     const res = await api.get(`/admin/orders/${orderId}`);
-    setOrder(res.data);
+    setOrder({ ...res.data, address: normalizeOrderAddress(res.data.address) });
     setLoading(false);
   };
 
@@ -159,12 +160,20 @@ export default function OrderDetailsPage() {
               <FiMapPin className="text-brandRed" /> Customer Logistics
             </h2>
             <div className="space-y-2">
-              <p className="text-lg font-black uppercase tracking-tight text-white">{order.address?.name}</p>
-              <p className="text-sm font-bold text-brandRed tracking-widest">{order.address?.phone}</p>
-              <div className="pt-2 text-sm text-zinc-400 font-medium leading-relaxed uppercase tracking-tight">
-                <p>{order.address?.addressLine1 || order.address?.street}</p>
-                <p>{order.address?.city}, {order.address?.state} - {order.address?.pincode}</p>
-              </div>
+              {order.address ? (
+                <>
+                  <p className="text-lg font-black uppercase tracking-tight text-white">{order.address.name}</p>
+                  <p className="text-sm font-bold text-brandRed tracking-widest">{order.address.phone}</p>
+                  <div className="pt-2 text-sm text-zinc-400 font-medium leading-relaxed uppercase tracking-tight">
+                    <p>{order.address.addressLine1 || order.address.street}</p>
+                    {order.address.addressLine2 && <p>{order.address.addressLine2}</p>}
+                    <p>{[order.address.city, order.address.state, order.address.pincode].filter(Boolean).join(", ")}</p>
+                    {order.address.country && <p>{order.address.country}</p>}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-amber-400">Shipping address is unavailable for this order. Verify the delivery details with the customer before shipping.</p>
+              )}
             </div>
           </div>
         </div>

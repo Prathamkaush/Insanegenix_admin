@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
+import { normalizeOrderAddress, type OrderAddress } from "@/lib/order-address";
 
 type OrderItem = {
   id: number;
@@ -33,15 +34,7 @@ type Order = {
   couponDiscount: number;
   finalAmount: number;
   items: OrderItem[];
-  address: {
-    name: string;
-    phone: string;
-    street?: string;
-    addressLine1?: string;
-    city: string;
-    state: string;
-    pincode: string;
-  };
+  address: OrderAddress | null;
 };
 
 type StorefrontSettings = {
@@ -81,7 +74,7 @@ export default function AdminInvoicePage() {
           api.get(`/admin/orders/${orderId}`),
           api.get("/settings")
         ]);
-        setOrder(orderRes.data);
+        setOrder({ ...orderRes.data, address: normalizeOrderAddress(orderRes.data.address) });
         setSettings(settingsRes.data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load invoice details");
